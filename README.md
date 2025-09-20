@@ -24,8 +24,9 @@ A reusable workspace for building OAuth-protected Model Context Protocol servers
    - Copy `.keycloak-env.example` to `.keycloak-env` and provide `KC_CLIENT_ID` / `KC_CLIENT_SECRET` plus issuer URLs.
    - For each service, copy `services/<name>/.env.example` to `services/<name>/.env` and fill in:
      - `PORT` (container + Traefik port)
-     - `MCP_PUBLIC_HOST` (Traefik host rule)
-     - `MCP_SERVICE_NAME` (compose service key)
+    - `MCP_PUBLIC_HOST` (Traefik host rule)
+    - `MCP_SERVICE_NAME` (compose service key)
+    - `MCP_BUILD_CONTEXT` (path to the service source, e.g. `./services/<name>`)
      - `MCP_NETWORK_EXTERNAL` (existing Docker network used by Traefik)
      - OAuth URLs (`MCP_PUBLIC_BASE_URL`, `PRM_RESOURCE_URL`, `OIDC_ISSUER`, `OIDC_AUDIENCE`)
 

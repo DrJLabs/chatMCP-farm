@@ -1,0 +1,30 @@
+# Node artifacts
+node_modules/
+dist/
+
+# Environment files
+.env
+.keycloak-env
+services/*/.env
+*.local
+# Allow example env files to be tracked
+!.env.example
+!**/.env.example
+!.keycloak-env.example
+docs/.generated/
+docs/local/
+docs/config.local.json
+var/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor
+.idea/
+.vscode/
+.DS_Store
+# BMAD (local only)
+.bmad-core/
+.bmad-*/

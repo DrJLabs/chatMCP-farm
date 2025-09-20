@@ -1,7 +1,7 @@
 services:
   ${MCP_SERVICE_NAME}:
     build:
-      context: ./services/${MCP_SERVICE_NAME}
+      context: ${MCP_BUILD_CONTEXT}
     env_file:
       - ./.env
     environment:
