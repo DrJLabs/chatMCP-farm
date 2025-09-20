@@ -1,50 +1,74 @@
-# MCP Servers Workspace (Pre-Split)
+# Chat MCP Farm
 
-This directory is evolving into a standalone repository dedicated to MCP services secured via a shared Keycloak realm (configure the actual name in `docs/config.sample.json`). The goal is to keep all OAuth wiring, documentation, and automation local so each service can ship independently of the broader Keycloak infra.
+A reusable workspace for building OAuth-protected Model Context Protocol servers. It packages a reference service, shared TypeScript auth helpers, automation scripts for Keycloak, and templated documentation so new MCP services can be scaffolded quickly.
 
-## What's Here Today
-- `services/openmemory/` – reference MCP implementation using the auth kit and docker-compose wiring.
-- `packages/mcp-auth-kit/` – reusable Express helpers for Keycloak-backed OAuth metadata and enforcement (exports `AUTH_ENV_VARS` so every service shares the same environment contract).
-- `scripts/kc/` – automation that now authenticates directly against Keycloak using the `KC_CLIENT_ID`/`KC_CLIENT_SECRET` service account (defaults assume the local admin proxy at `http://127.0.0.1:5050/auth`).
-- `docs/` – project-scoped copies of the ChatGPT + Keycloak integration guide and bootstrap checklist (templated; see below).
-- `scripts/` – automation helpers including the service bootstrapper.
-- `scripts/compose.sh` – wrapper that assembles every `services/*/compose.yml` fragment into a single `docker compose` invocation.
-- `templates/` – reusable service skeletons referenced by the bootstrapper.
-- `PROJECT_SPLIT_PLAN.md` – roadmap for extracting this workspace.
+## What’s Inside
 
-## Near-Term Roadmap
-1. Finish workspace toolchain (bootstrap script, `kc` helpers, CI wiring).
-2. Iterate on `templates/service` to cover additional transports/tests.
-3. Finish Keycloak automation helpers under `scripts/kc/`.
-4. Harden documentation and add CI before splitting into its own repo.
+- **`services/openmemory/`** – example MCP service wired to the auth kit and compose tooling.
+- **`packages/mcp-auth-kit/`** – Express utilities that load env-based config, enforce OAuth audiences, and expose manifest/PRM handlers (see `AUTH_ENV_VARS`).
+- **`scripts/kc/`** – client-credential automation for Keycloak (no local container required).
+- **`templates/service/`** – scaffolding for new MCP services (Dockerfile, env template, compose fragment).
+- **`scripts/compose.sh`** – wrapper that discovers every `services/*/compose.yml` and invokes `docker compose` with the combined stack.
+- **`docs/`** – bootstrap and OAuth integration guides (templated via `npm run docs:render`).
+- **`PROJECT_SPLIT_PLAN.md`** – roadmap and open tasks for hardening the workspace.
 
-## Implementation Playbook
-- Start with `PROJECT_SPLIT_PLAN.md` for roadmap, immediate next steps, and the Implementation Kickoff checklist.
-- Use `docs/bootstrap-checklist.md` when scaffolding a new service; render a local copy with `npm run docs:render` to expand placeholders.
-- Automation scripts live in `scripts/`; read `scripts/README.md` for current coverage and TODOs before extending.
-- Run MCP services via `scripts/compose.sh <docker-compose args>`; it builds `COMPOSE_FILE` from every `services/*/compose.yml`, so dropping a new service folder automatically enrolls it in the stack. Each service reads its own `.env` file for runtime settings:
-  - `PORT` drives both the container listener and the Traefik load-balancer service port.
-  - `MCP_PUBLIC_HOST` sets the host used in Traefik routing labels (e.g. `mcp.example.com`).
-  - `MCP_SERVICE_NAME` controls the service key in the generated compose file; this is what Traefik references in its service/route labels.
-  - `MCP_NETWORK_EXTERNAL` specifies the Docker network that exposes the service to Traefik (typically an existing external network). The generated compose file maps this value to the service’s default network.
-  - To attach additional networks (e.g. a private bridge), either extend the service’s `compose.yml` or drop an extra compose fragment beside it—see the comments in each `.env` example for suggested variables.
+## Getting Started
 
-## How To Contribute (while inside monorepo)
-- Run workspace commands from this directory: `npm install`, `npm run build`, etc.
-- Keep docs in sync: edit `docs/oauth-keycloak.md` (templated) and re-render local copies; update upstream shared docs once finalized.
-- Update the plan file after significant progress so the extraction path stays clear.
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-## Split Milestone Criteria
-- All MCP services build & test via workspace tooling.
-- Keycloak onboarding scripts live under `mcp-servers/scripts/` with documented usage.
-- Documentation under `mcp-servers/docs/` stands alone.
-- `packages/mcp-auth-kit` packaged for reuse (npm or internal registry).
+2. **Configure environments**
+   - Copy `.env.example` to `.env` for workspace-wide overrides (optional).
+   - Copy `.keycloak-env.example` to `.keycloak-env` and provide `KC_CLIENT_ID` / `KC_CLIENT_SECRET` plus issuer URLs.
+   - For each service, copy `services/<name>/.env.example` to `services/<name>/.env` and fill in:
+     - `PORT` (container + Traefik port)
+     - `MCP_PUBLIC_HOST` (Traefik host rule)
+     - `MCP_SERVICE_NAME` (compose service key)
+     - `MCP_NETWORK_EXTERNAL` (existing Docker network used by Traefik)
+     - OAuth URLs (`MCP_PUBLIC_BASE_URL`, `PRM_RESOURCE_URL`, `OIDC_ISSUER`, `OIDC_AUDIENCE`)
 
-Stay within this plan when adding new services so we can extract cleanly later.
+3. **Run services**
+   ```bash
+   scripts/compose.sh up --build
+   ```
+   `scripts/compose.sh` automatically includes every `services/*/compose.yml`, so adding a new service folder enrolls it in the stack without editing the root compose file.
 
-## Documentation templating
+4. **Bootstrap Keycloak**
+   - `scripts/kc/create_mcp_scope.sh --resource <MCP_PUBLIC_BASE_URL>` ensures scopes, mappers, and trusted hosts exist.
+   - `scripts/kc/status.sh --resource <MCP_PUBLIC_BASE_URL>` verifies realm defaults and client assignments.
+   - `scripts/kc/trusted_hosts.sh --add <host>` maintains the trusted host policy.
 
-- `docs/config.sample.json` lists the supported template variables and the Markdown templates rendered by `npm run docs:render`.
-- Override variables locally by creating `docs/local/config.local.json` (ignored by git). Only include secrets or machine-specific values here.
-- Generated Markdown lives under `docs/.generated/`; the command recreates the files on every run so do not edit them manually.
-- Placeholders in committed docs use `{{VARIABLE}}` syntax so the open-source copy stays environment-agnostic while your local render stays accurate.
+5. **Smoke tests**
+   ```bash
+   npm run build --workspace <service>
+   npm run smoke --workspace <service>
+   npm run smoke:sse --workspace <service>   # when ENABLE_SSE=true
+   ```
+
+## Adding a New MCP Service
+
+1. `scripts/bootstrap.sh <service-name>` – copies the template skeleton into `services/<service-name>`.
+2. Fill out `services/<service-name>/.env` using the example as guidance.
+3. Update Taurus docs (`docs/bootstrap-checklist.md`) or service README as needed.
+4. Re-run `scripts/compose.sh up --build` to include the new service.
+
+## Documentation
+
+- `docs/config.sample.json` enumerates template variables.
+- Generate environment-specific docs with `npm run docs:render` after placing overrides in `docs/local/config.local.json` (ignored by git).
+- Committed docs retain `{{VARIABLE}}` placeholders so the public repo stays environment-agnostic.
+
+## Repository Hygiene
+
+- Secrets and environment-specific values belong in local `.env` files (ignored by git).
+- Run `scripts/compose.sh` and `npm run build --workspaces` before opening PRs.
+- Use `codex-review` or your preferred review tool after staging changes; it compares against the last commit, so ensure a baseline exists.
+
+## Roadmap
+
+1. Expand test coverage in template services.
+2. Publish `mcp-auth-kit` to an internal or public registry.
+3. Add CI workflows (lint, test, docs render).
+4. Harden documentation and automation prior to cutting initial releases.
