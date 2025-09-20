@@ -1,0 +1,40 @@
+services:
+  ${MCP_SERVICE_NAME}:
+    build:
+      context: ./services/${MCP_SERVICE_NAME}
+    env_file:
+      - ./.env
+    environment:
+      PORT: ${PORT}
+      REQUIRE_AUTH: ${REQUIRE_AUTH}
+      ENABLE_STREAMABLE: ${ENABLE_STREAMABLE}
+      ENABLE_SSE: ${ENABLE_SSE}
+      MCP_PUBLIC_BASE_URL: ${MCP_PUBLIC_BASE_URL}
+      PRM_RESOURCE_URL: ${PRM_RESOURCE_URL}
+      OIDC_ISSUER: ${OIDC_ISSUER}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE}
+      DEBUG_HEADERS: ${DEBUG_HEADERS:-false}
+      OPENMEMORY_BASE_URL: ${OPENMEMORY_BASE_URL}
+    networks:
+      - external
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${MCP_NETWORK_EXTERNAL}
+      - traefik.http.routers.${MCP_SERVICE_NAME}.rule=Host(`${MCP_PUBLIC_HOST}`) && PathPrefix(`/mcp`)
+      - traefik.http.routers.${MCP_SERVICE_NAME}.entrypoints=websecure
+      - traefik.http.routers.${MCP_SERVICE_NAME}.tls=true
+      - traefik.http.services.${MCP_SERVICE_NAME}.loadbalancer.server.port=${PORT}
+      - traefik.http.routers.${MCP_SERVICE_NAME}.middlewares=om-auth@docker
+      - traefik.http.middlewares.om-auth.forwardauth.address=http://auth-service:8080/auth
+      # Optional SSE routing if fallback is enabled
+      # - traefik.http.routers.${MCP_SERVICE_NAME}-sse.rule=Host(`${MCP_PUBLIC_HOST}`) && PathPrefix(`/sse`)
+      # - traefik.http.routers.${MCP_SERVICE_NAME}-sse.entrypoints=websecure
+      # - traefik.http.routers.${MCP_SERVICE_NAME}-sse.tls=true
+      # - traefik.http.services.${MCP_SERVICE_NAME}-sse.loadbalancer.server.port=${PORT}
+      # - traefik.http.routers.${MCP_SERVICE_NAME}-sse.middlewares=om-auth@docker,om-sse-headers@docker
+      # - traefik.http.middlewares.om-sse-headers.headers.customResponseHeaders.X-Accel-Buffering=no
+
+networks:
+  external:
+    name: ${MCP_NETWORK_EXTERNAL}
+    external: true

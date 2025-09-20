@@ -1,0 +1,30 @@
+services:
+  ${MCP_SERVICE_NAME}:
+    build:
+      context: ./services/${MCP_SERVICE_NAME}
+    env_file:
+      - ./services/${MCP_SERVICE_NAME}/.env
+    environment:
+      PORT: ${PORT}
+      REQUIRE_AUTH: ${REQUIRE_AUTH}
+      ENABLE_STREAMABLE: ${ENABLE_STREAMABLE}
+      ENABLE_SSE: ${ENABLE_SSE}
+      MCP_PUBLIC_BASE_URL: ${MCP_PUBLIC_BASE_URL}
+      PRM_RESOURCE_URL: ${PRM_RESOURCE_URL}
+      OIDC_ISSUER: ${OIDC_ISSUER}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE}
+      DEBUG_HEADERS: ${DEBUG_HEADERS:-false}
+    networks:
+      - external
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${MCP_NETWORK_EXTERNAL}
+      - traefik.http.routers.${MCP_SERVICE_NAME}.rule=Host(`${MCP_PUBLIC_HOST}`) && PathPrefix(`/mcp`)
+      - traefik.http.routers.${MCP_SERVICE_NAME}.entrypoints=websecure
+      - traefik.http.routers.${MCP_SERVICE_NAME}.tls=true
+      - traefik.http.services.${MCP_SERVICE_NAME}.loadbalancer.server.port=${PORT}
+
+networks:
+  external:
+    name: ${MCP_NETWORK_EXTERNAL}
+    external: true

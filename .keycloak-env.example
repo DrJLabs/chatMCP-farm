@@ -1,0 +1,10 @@
+# Keycloak automation environment (consumed by kc_* scripts)
+# Copy to .keycloak-env and supply real secrets locally. Do not commit populated files.
+
+KC_SERVER=http://127.0.0.1:5050/auth
+KC_ADMIN_REALM=
+KC_REALM=
+KC_CLIENT_ID=keycloak-automation
+KC_CLIENT_SECRET=change-me
+# Optional override; defaults to ${KC_SERVER}/realms/${KC_ADMIN_REALM}/protocol/openid-connect/token
+# KC_TOKEN_ENDPOINT=http://127.0.0.1:5050/auth/realms/OMA/protocol/openid-connect/token

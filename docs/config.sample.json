@@ -1,0 +1,22 @@
+{
+  "variables": {
+    "KC_REALM": "example-realm",
+    "KC_HOSTNAME": "https://keycloak.example.com/auth",
+    "KC_HOSTNAME_ADMIN": "http://127.0.0.1:5050/auth",
+    "KC_ISSUER": "https://keycloak.example.com/auth/realms/example-realm",
+    "MCP_BASE_URL": "https://service.example.com/mcp",
+    "MCP_SCOPE_NAME": "mcp-resource",
+    "OIDC_AUDIENCE": "https://service.example.com/mcp",
+    "ALLOWED_ORIGINS": "https://chatgpt.com,https://chat.openai.com"
+  },
+  "templates": [
+    {
+      "source": "docs/bootstrap-checklist.md",
+      "output": "docs/.generated/bootstrap-checklist.md"
+    },
+    {
+      "source": "docs/oauth-keycloak.md",
+      "output": "docs/.generated/oauth-keycloak.md"
+    }
+  ]
+}
