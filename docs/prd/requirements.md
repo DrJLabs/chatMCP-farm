@@ -10,7 +10,7 @@
 - FR7: MCP services expose health/debug endpoints for operators.
 
 ## Non-Functional Requirements
-- NFR1: Node.js 24 + TypeScript 5, strict type checking.
+- NFR1: Node.js 24.x (current release with October 2025 LTS promotion planned) + TypeScript 5, strict type checking.
 - NFR2: OAuth enforced by default; overrides limited to local development.
 - NFR3: Lint/test/build complete within 5 minutes on developer hardware.
 - NFR4: Structured logging with request IDs, session ids, auth flag.

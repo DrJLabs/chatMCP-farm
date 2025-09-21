@@ -26,11 +26,11 @@ Stabilize the monorepo toolchain, automation scripts, and documentation so addit
   2. Validated by running from a clean clone.
   3. Linked from README and PRD.
 
-### Story 1.4 – Upgrade workspace tooling to Node 24 LTS
-- As a platform engineer, I want the workspace to standardise on Node.js 24 LTS so development, CI, and runtime images stay aligned with the upcoming LTS.
+### Story 1.4 – Upgrade workspace tooling to Node 24.x ahead of LTS
+- As a platform engineer, I want the workspace to standardise on Node.js 24.x while it is still pre-LTS so development, CI, and runtime images are ready for the October 2025 LTS cutover.
 - Acceptance Criteria
-  1. Update node engines, Docker base images, and any build scripts to Node 24 LTS.
-  2. CI workflows and local documentation reflect the new Node version with guidance for nvm/asdf installs.
-  3. `npm run lint|test|build` passes under Node 24 across packages and services.
-  4. Release notes in docs/prd.md Change Log capture the version migration.
+  1. Update node engines, Docker base images, and any build scripts to Node 24.x, noting the pre-LTS status.
+  2. CI workflows and local documentation reflect the new Node version with guidance for nvm/asdf installs plus the planned LTS promotion timeline.
+  3. `npm run lint|test|build` passes under Node 24.x across packages and services.
+  4. Release notes in docs/prd.md Change Log capture the version migration and pre-LTS validation approach.
 

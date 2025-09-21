@@ -2,7 +2,7 @@
 
 | Layer | Choice | Notes |
 | --- | --- | --- |
-| Language Runtime | Node.js 24 LTS | Aligns with MCP SDK support and modern ESM features |
+| Language Runtime | Node.js 24.x (pre-LTS; October 2025 promotion expected) | Aligns with MCP SDK support and modern ESM features |
 | Application Framework | Express 4 | Lightweight HTTP server with mature ecosystem |
 | MCP SDK | `@modelcontextprotocol/sdk` | Provides Streamable HTTP transport (SSE fallback available when required) |
 | Auth/OIDC | Keycloak (`OMA` realm) | Shared OAuth provider; integrates via `mcp-auth-kit` |

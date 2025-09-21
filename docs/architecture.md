@@ -1,7 +1,7 @@
 # Chat MCP Farm Architecture Document
 
-**Version:** 0.1.0  
-**Last Updated:** September 19, 2025  
+**Version:** 0.1.1  
+**Last Updated:** September 20, 2025  
 **Author:** Codex Architecture Team  
 **Status:** Draft (Initial)
 
@@ -16,6 +16,7 @@ The project originates from the `mcp-servers` workspace. We retain its monorepo 
 ### 1.2 Change Log
 | Date | Version | Description | Author |
 | --- | --- | --- | --- |
+| 2025-09-20 | 0.1.1 | Documented script/runtime inventory and doc generation pipeline | Codex |
 | 2025-09-19 | 0.1.0 | Initial architecture draft for standalone MCP workspace | Codex |
 
 ---
@@ -28,6 +29,7 @@ Chat MCP Farm is a Node.js/TypeScript monorepo that ships OAuth-secured MCP serv
 ### 2.2 High-Level Overview
 - **Architecture Style:** Modular monolith within a monorepo; each MCP service is a deployable container sharing infrastructure tooling.
 - **Repository Structure:** npm workspaces; shared base configs (`tsconfig.base.json`), root scripts orchestrate builds/tests.
+- **Tooling & Automation:** `scripts/bootstrap.sh` scaffolds services, `scripts/compose.sh` merges per-service compose files, and `scripts/render-docs.mjs` applies configuration overlays during documentation renders.
 - **Service Boundary:** `packages/mcp-auth-kit` centralizes auth behaviour; each entry under `services/*` consumes it and exposes domain-specific MCP tools for its chosen downstream integration.
 - **Primary Flow:** ChatGPT Developer Mode → Ingress → MCP Service (Express) → Auth kit verifies bearer token via Keycloak → Service executes domain logic against its target system (for example, the OpenMemory REST API) → Response streamed back to client.
 - **Key Decisions:** Enforce OAuth by default, keep automation local, standardize on Streamable HTTP transport (add SSE only when explicitly required), prefer TypeScript strict mode, treat docs as first-class assets.
@@ -72,9 +74,11 @@ graph LR
 - **Configuration:** Environment variables define base URLs, credentials, and transport toggles (e.g., enabling legacy SSE) per service; no global runtime contract beyond the auth kit.
 
 ### 3.3 Templates & Scripts
-- **templates/service:** Skeleton for new services (Express + auth kit + tests) updated as best practices evolve.
+- **templates/service/**: Skeleton for new services (Express + auth kit + tests) updated as best practices evolve.
+- **scripts/bootstrap.sh:** Scaffolds new MCP services from the template, wiring dependencies and Docker snippets.
+- **scripts/compose.sh:** Aggregates every `services/*/compose.yml` into a single docker-compose invocation for local stacks.
 - **scripts/kc/*.sh:** Shell helpers wrapping `kcadm` to configure Keycloak (scopes, trusted hosts, status checks).
-- **scripts/bootstrap.sh:** Scaffolds new MCP services from the template, wiring dependencies and docker snippets.
+- **scripts/render-docs.mjs:** Applies overrides from `docs/config.sample.json` + `docs/local/` to render environment-specific documentation.
 
 ---
 
@@ -154,4 +158,3 @@ graph LR
 - **Dev Agent Guidance:** Always load `docs/architecture/tech-stack.md`, `docs/architecture/source-tree.md`, and `docs/architecture/coding-standards.md` before implementing stories.
 - **QA Guidance:** Reference testing strategy to design gates once stories begin.
 - **Future Enhancements:** Instrument metrics, finalize CI/CD pipeline, extend architecture doc with service-specific sections as new MCP services are added.
-

@@ -4,15 +4,16 @@
 
 This document captures every configuration requirement and quirk we encountered while getting the MCP server working as a ChatGPT Developer Mode connector. Follow these steps end-to-end when standing up or debugging the integration.
 
-> **Scope**: Keycloak 26.x realm `{{KC_REALM}}`, MCP server (TypeScript) deployed behind Traefik/Cloudflare at `<MCP_BASE_URL>`, ChatGPT Developer Mode connectors (September 2025).
-> **Variable key**: `MCP_HOST` is the canonical hostname (e.g., `service.example.com`); `MCP_BASE_URL` = `https://<MCP_HOST>/mcp`.
+> **Scope**: Keycloak 26.x realm `{{KC_REALM}}`, MCP server (TypeScript) deployed behind Traefik/Cloudflare at `<MCP_PUBLIC_BASE_URL>`, ChatGPT Developer Mode connectors (September 2025).
+> **Variable key**: `MCP_HOST` is the canonical hostname (e.g., `service.example.com`); `MCP_TRANSPORT_URL = https://<MCP_HOST>/mcp`.
 >
 > **Variable reference** (configure via `docs/config.sample.json` + `docs/local/config.local.json`)
 > - `{{KC_REALM}}` — Keycloak realm name for the MCP deployment.
 > - `{{KC_HOSTNAME}}` — Base URL for public Keycloak requests (no `/realms/...`).
 > - `{{KC_HOSTNAME_ADMIN}}` — Admin hostname for local access to the realm.
 > - `{{KC_ISSUER}}` — Issuer URL (`{{KC_HOSTNAME}}/realms/{{KC_REALM}}`).
-> - `{{MCP_BASE_URL}}` — Canonical Streamable HTTP endpoint for the MCP server.
+> - `{{MCP_PUBLIC_BASE_URL}}` — Public origin for the MCP service (OAuth protected resource).
+> - `{{MCP_TRANSPORT_URL}}` — Streamable HTTP endpoint for the MCP server (`{{MCP_PUBLIC_BASE_URL}}/mcp`).
 > - `{{MCP_SCOPE_NAME}}` — Audience client scope injected into OAuth tokens.
 > - `{{OIDC_AUDIENCE}}` — Additional audience identifier accepted by the MCP service (legacy compatibility).
 
@@ -24,7 +25,7 @@ This document captures every configuration requirement and quirk we encountered 
 
 1. ChatGPT discovers MCP metadata from `https://<MCP_HOST>/.well-known/mcp/manifest.json` and `/.well-known/oauth-protected-resource`.
 2. During connector setup ChatGPT performs OAuth Dynamic Client Registration (DCR) against Keycloak and creates a confidential client (random UUID).
-3. ChatGPT drives an OAuth 2.1 authorization-code + PKCE flow with `redirect_uri=https://chatgpt.com/connector_platform_oauth_redirect` and `resource=<MCP_BASE_URL>`.
+3. ChatGPT drives an OAuth 2.1 authorization-code + PKCE flow with `redirect_uri=https://chatgpt.com/connector_platform_oauth_redirect` and `resource=<MCP_PUBLIC_BASE_URL>`.
 4. After consent, ChatGPT exchanges the code for an access token and calls `/mcp` using the Streamable HTTP transport.
 
 OAuth succeeds only if Keycloak issues a token whose `aud` contains the MCP resource. The MCP server enforces the audience and the `Accept` header (`application/json, text/event-stream`).
@@ -49,11 +50,11 @@ OAuth succeeds only if Keycloak issues a token whose `aud` contains the MCP reso
 ### 2.3 Client scope for MCP audience
 
 - Created a dedicated OIDC client scope `{{MCP_SCOPE_NAME}}`.
-- Attached protocol mapper `mcp-audience` (`oidc-audience-mapper`) with `included.custom.audience={{MCP_BASE_URL}}` and `access.token.claim=true`.
+- Attached protocol mapper `mcp-audience` (`oidc-audience-mapper`) with `included.custom.audience={{MCP_PUBLIC_BASE_URL}}` and `access.token.claim=true`.
 - Added `{{MCP_SCOPE_NAME}}` to the realm’s **default client scopes** (`/realms/{{KC_REALM}}/default-default-client-scopes`).
 - For existing ChatGPT registration clients and the static `{{OIDC_AUDIENCE}}`, we explicitly added `{{MCP_SCOPE_NAME}}` to their default scopes so issued tokens include the MCP audience immediately.
 
-Automation tip: `scripts/kc/create_mcp_scope.sh --resource <MCP_BASE_URL>` performs these steps idempotently (scope, mapper, trusted host entry, and default-scope attachments). Follow with `scripts/kc/status.sh --resource <MCP_BASE_URL>` to confirm audience mappings and client assignments, and `scripts/kc/trusted_hosts.sh --list` / `--add <host>` to review or tweak the trusted host policy. All scripts authenticate via the `KC_CLIENT_ID` / `KC_CLIENT_SECRET` service account defined in `.keycloak-env` using the client-credentials grant, so they no longer depend on the Keycloak Docker stack running in this repository.
+Automation tip: `scripts/kc/create_mcp_scope.sh --resource <MCP_PUBLIC_BASE_URL>` performs these steps idempotently (scope, mapper, trusted host entry, and default-scope attachments). Follow with `scripts/kc/status.sh --resource <MCP_PUBLIC_BASE_URL>` to confirm audience mappings and client assignments, and `scripts/kc/trusted_hosts.sh --list` / `--add <host>` to review or tweak the trusted host policy. All scripts authenticate via the `KC_CLIENT_ID` / `KC_CLIENT_SECRET` service account defined in `.keycloak-env` using the client-credentials grant, so they no longer depend on the Keycloak Docker stack running in this repository.
 
 ### 2.4 Redirect URIs and origins
 
@@ -82,10 +83,11 @@ Automation tip: `scripts/kc/create_mcp_scope.sh --resource <MCP_BASE_URL>` perfo
 
 ### 3.1 Endpoint & schema
 
-- Public endpoint: `<MCP_BASE_URL>` (Streamable HTTP).
+- Public origin: `<MCP_PUBLIC_BASE_URL>` (OAuth protected resource).
+- Streamable HTTP endpoint: `<MCP_TRANSPORT_URL>`.
 - Manifest (`/.well-known/mcp/manifest.json`): `schemaVersion` **must** be `2025-06-18` to match the latest spec. Older versions (2024-11-05) caused ChatGPT to assume legacy requirements.
 - Protected Resource Metadata (`/.well-known/oauth-protected-resource`):
-  - `resource = <MCP_BASE_URL>`
+  - `resource = <MCP_PUBLIC_BASE_URL>`
   - `authorization_servers = ["{{KC_ISSUER}}/.well-known/oauth-authorization-server"]`
   - `bearer_methods_supported = ["header"]`
   - Include `mcp_protocol_version: "2025-06-18"` for transparency.
@@ -97,10 +99,11 @@ Automation tip: `scripts/kc/create_mcp_scope.sh --resource <MCP_BASE_URL>` perfo
 
 | Variable | Value | Notes |
 | --- | --- | --- |
-| `MCP_PUBLIC_BASE_URL` | `<MCP_BASE_URL>` | Must match canonical resource |
-| `PRM_RESOURCE_URL` | `<MCP_BASE_URL>` | Used for PRM + WWW-Authenticate helper |
+| `MCP_PUBLIC_BASE_URL` | `<MCP_PUBLIC_BASE_URL>` | Must match canonical resource |
+| `MCP_TRANSPORT_URL` | `<MCP_PUBLIC_BASE_URL>/mcp` | Streamable HTTP endpoint served by the MCP |
+| `PRM_RESOURCE_URL` | `<MCP_PUBLIC_BASE_URL>` | Used for PRM + WWW-Authenticate helper |
 | `OIDC_ISSUER` | `{{KC_ISSUER}}` | Issuer for Keycloak realm |
-| `OIDC_AUDIENCE` | `<MCP_BASE_URL>,{{OIDC_AUDIENCE}}` | Accept canonical resource and legacy client id |
+| `OIDC_AUDIENCE` | `<MCP_PUBLIC_BASE_URL>,{{OIDC_AUDIENCE}}` | Accept canonical resource and legacy client id |
 | `ENABLE_STREAMABLE` | `true` | Streamable HTTP transport |
 | `REQUIRE_AUTH` | `true` | Lock down MCP |
 | `DEBUG_HEADERS` | `true` (optional) | Enables verbose header logging |
@@ -119,7 +122,7 @@ Automation tip: `scripts/kc/create_mcp_scope.sh --resource <MCP_BASE_URL>` perfo
 1. **Dynamic client registration every attempt**: ChatGPT creates a new confidential client (UUID) whenever setup fails. Periodically prune orphan clients.
 2. **Trusted Hosts policy is mandatory**: Without the expanded allowlist and relaxed host matching, DCR fails with `Policy 'Trusted Hosts' rejected request to client-registration service`.
 3. **Consent loop**: After you click **Yes**, Keycloak logs show a consent POST followed by `/token` calls from `Python/3.12 aiohttp/3.9.5`. Only after a successful token exchange does ChatGPT call `/mcp`.
-4. **Audience enforcement**: The access token must include `aud=<MCP_BASE_URL>`. Missing audience manifests as 401s in MCP logs (`[AUTH] 401 unauthorized ... openai-mcp/1.0.0`).
+4. **Audience enforcement**: The access token must include `aud=<MCP_PUBLIC_BASE_URL>`. Missing audience manifests as 401s in MCP logs (`[AUTH] 401 unauthorized ... openai-mcp/1.0.0`).
 5. **Redirect URIs**: ChatGPT may choose any of the four URIs in §2.4. Always provision them before testing.
 6. **Discovery probes**: Expect numerous 404/308 requests against `/.well-known/**` paths. Ensure 308 redirects target the Keycloak issuer metadata.
 7. **Token endpoint auth**: ChatGPT sends `Authorization: Basic ...` (client credentials) on `/token`. Keep `client_secret_basic` enabled.
@@ -137,7 +140,7 @@ Automation tip: `scripts/kc/create_mcp_scope.sh --resource <MCP_BASE_URL>` perfo
    ```
 2. **OAuth bootstrap header**
    ```bash
-   curl -si <MCP_BASE_URL> | grep WWW-Authenticate
+   curl -si <MCP_PUBLIC_BASE_URL> | grep WWW-Authenticate
    ```
 3. **Dynamic client registration smoke**
    ```bash
@@ -153,7 +156,7 @@ Automation tip: `scripts/kc/create_mcp_scope.sh --resource <MCP_BASE_URL>` perfo
    curl -s -o token.json -w '%{http_code}' \
      -X POST {{KC_ISSUER}}/protocol/openid-connect/token \
      -H 'content-type: application/x-www-form-urlencoded' \
-     -d "grant_type=client_credentials&client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET&resource=<MCP_BASE_URL>"
+    -d "grant_type=client_credentials&client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET&resource=<MCP_PUBLIC_BASE_URL>"
    jq -r '.access_token' token.json | awk -F. '{print $2}' | base64 -d | jq '.aud'
    ```
 5. **MCP initialize/call**
@@ -163,7 +166,7 @@ Automation tip: `scripts/kc/create_mcp_scope.sh --resource <MCP_BASE_URL>` perfo
         -H "Authorization: Bearer $ACCESS_TOKEN" \
         -H 'Accept: application/json, text/event-stream' \
         -H 'Content-Type: application/json' \
-        -X POST <MCP_BASE_URL> \
+        -X POST <MCP_TRANSPORT_URL> \
         -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0.1"}}}'
    grep -i 'Mcp-Session-Id' headers.txt
    ```
