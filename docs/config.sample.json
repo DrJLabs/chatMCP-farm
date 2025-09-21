@@ -4,9 +4,10 @@
     "KC_HOSTNAME": "https://keycloak.example.com/auth",
     "KC_HOSTNAME_ADMIN": "http://127.0.0.1:5050/auth",
     "KC_ISSUER": "https://keycloak.example.com/auth/realms/example-realm",
-    "MCP_BASE_URL": "https://service.example.com/mcp",
+    "MCP_PUBLIC_BASE_URL": "https://service.example.com",
+    "MCP_TRANSPORT_URL": "https://service.example.com/mcp",
     "MCP_SCOPE_NAME": "mcp-resource",
-    "OIDC_AUDIENCE": "https://service.example.com/mcp",
+    "OIDC_AUDIENCE": "https://service.example.com",
     "ALLOWED_ORIGINS": "https://chatgpt.com,https://chat.openai.com"
   },
   "templates": [

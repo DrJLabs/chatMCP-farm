@@ -5,7 +5,7 @@
 - Monorepo on Node.js 24.x (tracking the October 2025 LTS promotion) with npm workspaces; Node.js 22 remains the active LTS baseline for production parity; Express 4 + `@modelcontextprotocol/sdk` back every MCP service.
 - `packages/mcp-auth-kit` centralizes OAuth, manifest/PRM tooling, JWKS pulls, and Streamable HTTP defaults (enable SSE only when mandated by a client).
 - Deployable MCP services live under `services/*`; `services/openmemory` is the current reference implementation.
-- Automation and scaffolds live in `scripts/` and `templates/service`; use docker-compose to boot Keycloak (`OMA` realm) plus target services locally.
+- Automation and scaffolds live in `scripts/` and `templates/service`; use docker compose to boot Keycloak (`OMA` realm) plus target services locally.
 
 ## Current Status & Focus
 

@@ -70,19 +70,19 @@ Provide a quick reference for operating the shared automation scripts that (a) a
 
 ---
 
----
 
 ## Healthcheck Script (`scripts/healthcheck.sh`)
 1. **Basic usage**
    ```bash
+   CLIENT_ID="$CLIENT_ID" CLIENT_SECRET="$CLIENT_SECRET" \
    scripts/healthcheck.sh \
      --base-url https://memory.example.com/mcp \
-     --issuer https://keycloak.example.com/auth/realms/OMA \
-     --client-id "$CLIENT_ID" \
-     --client-secret "$CLIENT_SECRET" --sse
+     --issuer https://keycloak.example.com/realms/OMA \
+     --sse
    ```
-   - Reads defaults from `MCP_BASE_URL`, `KC_ISSUER`, `CLIENT_ID`, `CLIENT_SECRET` when flags are omitted.
-   - Requires `jq`, `curl`, and `base64` on PATH.
+   - Reads defaults from `MCP_TRANSPORT_URL` (falls back to `MCP_PUBLIC_BASE_URL`), `KC_ISSUER`, `CLIENT_ID`, and `CLIENT_SECRET` when flags are omitted. `PRM_RESOURCE_URL` overrides the derived protected resource URL when set.
+   - Requires `jq` and `curl` on PATH.
+   - Prefer environment variables for `CLIENT_SECRET` to avoid exposing credentials via `ps`/shell history; the script logs a warning when the flag is used.
 2. **Checks performed**
    - Manifest availability and schema version (`.well-known/mcp/manifest.json`).
    - Protected resource metadata (`.well-known/oauth-protected-resource`).

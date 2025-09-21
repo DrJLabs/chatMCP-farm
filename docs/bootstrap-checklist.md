@@ -22,7 +22,7 @@ This quickstart distills the OAuth and infrastructure requirements for bringing 
 ## Bootstrap Steps
 1. **Generate service skeleton**
    - Run `scripts/bootstrap.sh <service-name>` to copy the Express template wired to `mcp-auth-kit` into `services/<service-name>`.
-   - Copy `services/<service-name>/.env.example` to `.env`, set `MCP_PUBLIC_BASE_URL`, derive `MCP_TRANSPORT_URL=${MCP_PUBLIC_BASE_URL}/mcp`, and configure the issuer (use `AUTH_ENV_VARS` from `mcp-auth-kit` as the source of truth for supported keys).
+   - Copy `services/<service-name>/.env.example` to `.env`, set `MCP_PUBLIC_BASE_URL`, derive `MCP_TRANSPORT_URL=${MCP_PUBLIC_BASE_URL}/mcp`, and configure `KC_ISSUER` (see "AUTH_ENV_VARS" in `packages/mcp-auth-kit/README.md` for supported keys).
 2. **Register Keycloak audience**
    - Run `scripts/kc/create_mcp_scope.sh --resource <MCP_PUBLIC_BASE_URL>` to provision the scope, mapper, default assignments, and trusted host entry (requires `.keycloak-env` with `KC_CLIENT_ID`/`KC_CLIENT_SECRET`; defaults point to the local admin proxy at `http://127.0.0.1:5050/auth`).
    - Validate with `scripts/kc/status.sh --resource <MCP_PUBLIC_BASE_URL>` and inspect/update the host list via `scripts/kc/trusted_hosts.sh --list` / `--add` as needed.
@@ -31,8 +31,8 @@ This quickstart distills the OAuth and infrastructure requirements for bringing 
 4. **Smoke test**
    - `npm run build --workspace <service>`
    - `scripts/compose.sh up --build <service-name>` (auto-includes every `services/*/compose.yml`)
-  - Run validation commands from `docs/oauth-keycloak.md` §5 (Streamable HTTP transport).
-  - Optionally execute `CLIENT_ID=<id> CLIENT_SECRET=<secret> scripts/healthcheck.sh --base-url <MCP_TRANSPORT_URL> --issuer <KC_ISSUER> --client-id <id>` to automate the manifest/PRM/token/initialize checks (prefer environment variables over CLI flags to keep secrets out of process lists).
+   - Run validation commands from the "Streamable HTTP transport" section of `docs/oauth-keycloak.md`.
+   - Optionally execute `CLIENT_ID=<id> CLIENT_SECRET=<secret> scripts/healthcheck.sh --base-url <MCP_TRANSPORT_URL> --issuer <KC_ISSUER> --client-id <id>` to automate the manifest/PRM/token/initialize checks (prefer environment variables over CLI flags to keep secrets out of process lists).
    - Optional SSE fallback: set `ENABLE_SSE=true` before starting the service, then run `npm run smoke:sse --workspace <service>` to validate legacy clients.
 5. **ChatGPT connector**
    - Initiate Developer Mode connector setup; confirm DCR creates client with `{{MCP_SCOPE_NAME}}` scope.

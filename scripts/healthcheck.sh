@@ -47,7 +47,19 @@ fi
 ISSUER=${KC_ISSUER:-}
 CLIENT_ID=${CLIENT_ID:-}
 CLIENT_SECRET=${CLIENT_SECRET:-}
-RESOURCE_URL=${MCP_RESOURCE_URL:-${PRM_RESOURCE_URL:-${MCP_PUBLIC_BASE_URL:-${BASE_URL:-}}}}
+RESOURCE_EXPLICIT=false
+if [[ -n "${MCP_RESOURCE_URL:-}" ]]; then
+  RESOURCE_URL=${MCP_RESOURCE_URL}
+  RESOURCE_EXPLICIT=true
+elif [[ -n "${PRM_RESOURCE_URL:-}" ]]; then
+  RESOURCE_URL=${PRM_RESOURCE_URL}
+  RESOURCE_EXPLICIT=true
+elif [[ -n "${MCP_PUBLIC_BASE_URL:-}" ]]; then
+  RESOURCE_URL=${MCP_PUBLIC_BASE_URL}
+  RESOURCE_EXPLICIT=true
+else
+  RESOURCE_URL=${BASE_URL:-}
+fi
 MANIFEST_URL=${MCP_MANIFEST_URL:-}
 PRM_URL=${MCP_PRM_URL:-}
 SCHEMA_VERSION=${MCP_SCHEMA:-2025-06-18}
@@ -60,7 +72,7 @@ while [[ $# -gt 0 ]]; do
     --issuer) ISSUER=$2; shift 2 ;;
     --client-id) CLIENT_ID=$2; shift 2 ;;
     --client-secret) CLIENT_SECRET=$2; SECRET_FROM_FLAG=true; shift 2 ;;
-    --resource-url) RESOURCE_URL=$2; shift 2 ;;
+    --resource-url) RESOURCE_URL=$2; RESOURCE_EXPLICIT=true; shift 2 ;;
     --manifest-url) MANIFEST_URL=$2; shift 2 ;;
     --prm-url) PRM_URL=$2; shift 2 ;;
     --schema) SCHEMA_VERSION=$2; shift 2 ;;
@@ -84,29 +96,29 @@ trim_trailing_slash() {
   value=${value%/}
   printf '%s' "$value"
 }
+
+derive_origin() {
+  local url=$1
+  [[ "$url" == *://* ]] || fail "Invalid URL (missing scheme): $url"
+  local scheme=${url%%://*}
+  local host_port=${url#*://}
+  host_port=${host_port%%/*}
+  printf '%s://%s' "$scheme" "$host_port"
+}
+
 BASE_URL=$(trim_trailing_slash "$BASE_URL")
 ISSUER=$(trim_trailing_slash "$ISSUER")
+
+ORIGIN=$(derive_origin "$BASE_URL")
+
+[[ -z "$MANIFEST_URL" ]] && MANIFEST_URL="${ORIGIN}/.well-known/mcp/manifest.json"
+[[ -z "$PRM_URL" ]] && PRM_URL="${ORIGIN}/.well-known/oauth-protected-resource"
+
+if [[ "$RESOURCE_EXPLICIT" == false ]]; then
+  RESOURCE_URL="$ORIGIN"
+fi
 RESOURCE_URL=$(trim_trailing_slash "$RESOURCE_URL")
-
-if [[ -z "$MANIFEST_URL" || -z "$PRM_URL" ]]; then
-  scheme="${BASE_URL%%:*}"
-  host_port="${BASE_URL#*://}"
-  host_port="${host_port%%/*}"
-  ORIGIN="${scheme}://${host_port}"
-  [[ -z "$MANIFEST_URL" ]] && MANIFEST_URL="${ORIGIN}/.well-known/mcp/manifest.json"
-  [[ -z "$PRM_URL" ]] && PRM_URL="${ORIGIN}/.well-known/oauth-protected-resource"
-fi
-
-if [[ -z "$RESOURCE_URL" ]]; then
-  if [[ -n "${ORIGIN:-}" ]]; then
-    RESOURCE_URL="$ORIGIN"
-  else
-    scheme="${BASE_URL%%:*}"
-    host_port="${BASE_URL#*://}"
-    host_port="${host_port%%/*}"
-    RESOURCE_URL="${scheme}://${host_port}"
-  fi
-fi
+[[ -z "$RESOURCE_URL" ]] && fail "Unable to determine protected resource URL; set --resource-url or PRM_RESOURCE_URL"
 
 SSE_URL="${BASE_URL}/sse"
 
