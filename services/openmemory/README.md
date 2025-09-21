@@ -1,6 +1,8 @@
 # OpenMemory MCP Service
 
-**Status:** Reference implementation (Draft)  
+## Status
+
+Reference implementation (Draft)
 **Last Updated:** September 20, 2025
 
 ---
@@ -20,11 +22,13 @@ The OpenMemory MCP service exposes a Streamable HTTP endpoint backed by the Open
 ---
 
 ## Environment Variables (`services/openmemory/.env`)
+
 | Variable | Description |
 | --- | --- |
 | `OIDC_ISSUER` | Keycloak issuer URL (e.g., `https://keycloak.example.com/auth/realms/OMA`). |
-| `OIDC_AUDIENCE` | Expected audience in access tokens (`<MCP_PUBLIC_BASE_URL>`). |
-| `PRM_RESOURCE_URL` | Public MCP base URL exposed in the protected resource metadata. |
+| `OIDC_AUDIENCE` | Expected audience in access tokens (should equal `MCP_PUBLIC_BASE_URL`). |
+| `PRM_RESOURCE_URL` | OAuth protected resource URL; equals `MCP_PUBLIC_BASE_URL`. |
+| `MCP_TRANSPORT_URL` | Transport endpoint consumed by clients (`${MCP_PUBLIC_BASE_URL}/mcp`). |
 | `REQUIRE_AUTH` | Whether OAuth is enforced (`true` in all environments except controlled local testing). |
 | `ENABLE_STREAMABLE` | Toggle Streamable HTTP transport (default `true`). |
 | `ENABLE_SSE` | Optional SSE fallback for legacy clients. |
@@ -42,6 +46,7 @@ The OpenMemory MCP service exposes a Streamable HTTP endpoint backed by the Open
 ---
 
 ## NPM Scripts
+
 Run these commands from the repo root using `npm run --workspace services/openmemory <script>` or by `cd` into the service directory.
 
 | Script | Command | Purpose |
@@ -66,6 +71,7 @@ Run these commands from the repo root using `npm run --workspace services/openme
 ---
 
 ## MCP Tool Catalog
+
 | Tool | Description | Input Summary |
 | --- | --- | --- |
 | `ping` | Echo test; verifies transport wiring. | `{ message?: string }` |
@@ -86,10 +92,11 @@ Run these commands from the repo root using `npm run --workspace services/openme
 4. For SSE, set `ENABLE_SSE=true` in `.env` before starting the service and run `npm run smoke:sse --workspace services/openmemory`.
 5. To run the end-to-end curl validation, execute:
    ```bash
-   scripts/healthcheck.sh --base-url "${MCP_PUBLIC_BASE_URL}" --issuer "${OIDC_ISSUER}" \
-     --client-id "$CLIENT_ID" --client-secret "$CLIENT_SECRET" --sse
+   MCP_TRANSPORT_URL="${MCP_TRANSPORT_URL:-${MCP_PUBLIC_BASE_URL%/}/mcp}" \
+   CLIENT_ID="$CLIENT_ID" CLIENT_SECRET="$CLIENT_SECRET" \
+   scripts/healthcheck.sh --base-url "${MCP_TRANSPORT_URL}" --issuer "${OIDC_ISSUER}" --client-id "$CLIENT_ID" --sse
    ```
-   (the script reads defaults from env vars if flags are omitted).
+   (the script reads defaults from env vars if flags are omitted; exporting secrets avoids exposing them via process lists).
 
 ---
 

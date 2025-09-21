@@ -30,6 +30,7 @@ command -v curl >/dev/null || fail "curl is required"
 command -v jq >/dev/null || fail "jq is required"
 
 readonly CURL_OPTS=(
+  --fail
   --show-error
   --silent
   --location
@@ -39,7 +40,7 @@ readonly CURL_OPTS=(
   --max-time 20
 )
 
-BASE_URL=${MCP_BASE_URL:-${MCP_TRANSPORT_URL:-}}
+BASE_URL=${MCP_TRANSPORT_URL:-${MCP_BASE_URL:-}}
 if [[ -z "${BASE_URL}" && -n "${MCP_PUBLIC_BASE_URL:-}" ]]; then
   BASE_URL="${MCP_PUBLIC_BASE_URL%/}/mcp"
 fi
@@ -87,15 +88,24 @@ BASE_URL=$(trim_trailing_slash "$BASE_URL")
 ISSUER=$(trim_trailing_slash "$ISSUER")
 RESOURCE_URL=$(trim_trailing_slash "$RESOURCE_URL")
 
-if [[ -z "$RESOURCE_URL" ]]; then
-  RESOURCE_URL=$BASE_URL
-fi
-
 if [[ -z "$MANIFEST_URL" || -z "$PRM_URL" ]]; then
-  _tmp=${BASE_URL#*://}
-  ORIGIN="${BASE_URL%%://*}://${_tmp%%/*}"
+  scheme="${BASE_URL%%:*}"
+  host_port="${BASE_URL#*://}"
+  host_port="${host_port%%/*}"
+  ORIGIN="${scheme}://${host_port}"
   [[ -z "$MANIFEST_URL" ]] && MANIFEST_URL="${ORIGIN}/.well-known/mcp/manifest.json"
   [[ -z "$PRM_URL" ]] && PRM_URL="${ORIGIN}/.well-known/oauth-protected-resource"
+fi
+
+if [[ -z "$RESOURCE_URL" ]]; then
+  if [[ -n "${ORIGIN:-}" ]]; then
+    RESOURCE_URL="$ORIGIN"
+  else
+    scheme="${BASE_URL%%:*}"
+    host_port="${BASE_URL#*://}"
+    host_port="${host_port%%/*}"
+    RESOURCE_URL="${scheme}://${host_port}"
+  fi
 fi
 
 SSE_URL="${BASE_URL}/sse"
@@ -104,18 +114,18 @@ TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
 log "Manifest check: $MANIFEST_URL"
-manifest_json=$(curl "${CURL_OPTS[@]}" --fail "$MANIFEST_URL") || fail "Unable to fetch manifest"
+manifest_json=$(curl "${CURL_OPTS[@]}" "$MANIFEST_URL") || fail "Unable to fetch manifest"
 schema=$(jq -r '.schemaVersion // empty' <<<"$manifest_json")
 if [[ "$schema" != "$SCHEMA_VERSION" ]]; then
   fail "Unexpected schemaVersion: $schema (expected $SCHEMA_VERSION). Override with --schema or MCP_SCHEMA."
 fi
-resource_from_manifest=$(jq -r '(.resources[0].url // "")' <<<"$manifest_json")
+resource_from_manifest=$(jq -r '.resources[0].url // ""' <<<"$manifest_json")
 if [[ -n "$resource_from_manifest" && "$resource_from_manifest" != "$RESOURCE_URL" ]]; then
   fail "Manifest resource mismatch: expected $RESOURCE_URL got $resource_from_manifest"
 fi
 
 log "Protected resource metadata: $PRM_URL"
-prm_json=$(curl "${CURL_OPTS[@]}" --fail "$PRM_URL") || fail "Unable to fetch protected resource metadata"
+prm_json=$(curl "${CURL_OPTS[@]}" "$PRM_URL") || fail "Unable to fetch protected resource metadata"
 resource=$(jq -r '.resource // empty' <<<"$prm_json")
 if [[ "$resource" != "$RESOURCE_URL" ]]; then
   fail "Protected resource mismatch: expected $RESOURCE_URL got $resource"
