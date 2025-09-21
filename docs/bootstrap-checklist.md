@@ -28,7 +28,7 @@ This quickstart distills the OAuth and infrastructure requirements for bringing 
 4. **Smoke test**
    - `npm run build --workspace <service>`
    - `scripts/compose.sh up --build <service-name>` (auto-includes every `services/*/compose.yml`)
- - Run validation commands from `docs/oauth-keycloak.md` §5 (Streamable HTTP transport).
+  - Run validation commands from `docs/oauth-keycloak.md` §5 (Streamable HTTP transport).
   - Optionally execute `scripts/healthcheck.sh --base-url <MCP_BASE_URL> --issuer <KC_ISSUER> --client-id <id> --client-secret <secret>` to automate the manifest/PRM/token/initialize checks.
    - Optional SSE fallback: set `ENABLE_SSE=true` before starting the service, then run `npm run smoke:sse --workspace <service>` to validate legacy clients.
 5. **ChatGPT connector**
