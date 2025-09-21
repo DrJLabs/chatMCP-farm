@@ -39,7 +39,7 @@ The `chat-mcp-farm` repository was split from a larger monorepo to focus on host
 - **FR7:** Capture structured debug endpoints (health, config, OIDC diagnostics) for every MCP service.
 
 ### 2.2 Non-Functional Requirements
-- **NFR1:** All services run on Node.js 24 LTS with ESM modules and TypeScript 5+ transpilation.
+- **NFR1:** All services run on Node.js 24.x (current release with October 2025 LTS promotion planned) with ESM modules and TypeScript 5+ transpilation.
 - **NFR2:** OAuth enforcement must default to enabled; disabling it requires explicit environment configuration and is only allowed in local development.
 - **NFR3:** Root `npm run lint|test|build` must complete within 5 minutes on a standard developer machine.
 - **NFR4:** Logging must include request identifiers, remote IP, OAuth status, and MCP session identifiers to aid incident response.
@@ -50,7 +50,7 @@ The `chat-mcp-farm` repository was split from a larger monorepo to focus on host
 ---
 
 ## 3. Technical Assumptions
-- **Languages & Runtime:** TypeScript targeting Node.js 24.x; ESM output with strict typing, TSConfig shared via `tsconfig.base.json`.
+- **Languages & Runtime:** TypeScript targeting Node.js 24.x (pre-LTS with October 2025 promotion expected); ESM output with strict typing, TSConfig shared via `tsconfig.base.json`.
 - **Frameworks & Libraries:** Express 4 for HTTP handling, `@modelcontextprotocol/sdk` for MCP transports, `zod` for tool schema validation, `morgan` for logging.
 - **Package Manager:** npm workspaces (monorepo). pnpm/Nx considered later if performance requires.
 - **Repository Structure:** Monorepo containing `packages/` for shared libs, `services/` for deployable MCP servers, `templates/` for scaffolding, `scripts/` for automation, `docs/` for operator guides.
@@ -144,8 +144,8 @@ Establish the monorepo, documentation, automation scripts, and CI backbone.
   **Acceptance Criteria:** Scripts run against local Keycloak container; logging highlights actions; docs reference them.
 - **Story 1.3:** Document developer bootstrap (env templates, docker-compose, smoke tests) in docs/bootstrap-checklist.md.  
   **Acceptance Criteria:** Checklist covers prerequisites, env vars, validation steps.
-- **Story 1.4:** Upgrade workspace tooling to Node.js 24 LTS.  
-  **Acceptance Criteria:** Engines, Docker images, and CI runners target Node 24; docs explain local install steps; `npm run lint|test|build` passes under Node 24; PRD change log notes the upgrade.
+- **Story 1.4:** Upgrade workspace tooling to Node.js 24.x ahead of the October 2025 LTS promotion.
+  **Acceptance Criteria:** Engines, Docker images, and CI runners target Node 24.x; docs explain local install steps (call out the pre-LTS status and upgrade timeline); `npm run lint|test|build` passes under Node 24.x; PRD change log notes the upgrade.
 
 ### Epic 2 – OpenMemory MCP Service Hardening
 Complete the reference MCP server and ensure production readiness.

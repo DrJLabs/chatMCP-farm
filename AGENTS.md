@@ -2,7 +2,7 @@
 
 ## Workspace Snapshot (Architecture v0.1.0 – Draft, updated September 19, 2025)
 
-- Monorepo on Node.js 22 (Active LTS as of September 21, 2025) with npm workspaces; Express 4 + `@modelcontextprotocol/sdk` back every MCP service.
+- Monorepo on Node.js 24.x (tracking the October 2025 LTS promotion) with npm workspaces; Express 4 + `@modelcontextprotocol/sdk` back every MCP service.
 - `packages/mcp-auth-kit` centralizes OAuth, manifest/PRM tooling, JWKS pulls, and Streamable HTTP defaults (enable SSE only when mandated by a client).
 - Deployable MCP services live under `services/*`; `services/openmemory` is the current reference implementation.
 - Automation and scaffolds live in `scripts/` and `templates/service`; use docker-compose to boot Keycloak (`OMA` realm) plus target services locally.
@@ -11,7 +11,7 @@
 
 - Architecture (`docs/architecture.md`) and PRD (`docs/prd.md`) sit at Draft v0.1.0; update their change logs with every material revision.
 - Active workstreams: Epic 1 (workspace foundation), Epic 2 (OpenMemory hardening), Epic 3 (service bootstrap and release tooling).
-- Keep Node.js 22 tooling, Keycloak automation scripts, and documentation aligned before introducing additional MCP services.
+- Keep Node.js 24.x tooling, Keycloak automation scripts, and documentation aligned while we validate the release ahead of its October 2025 LTS cutover.
 
 ## Required References Before Execution
 

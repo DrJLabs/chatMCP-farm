@@ -11,7 +11,7 @@ The OpenMemory MCP service exposes a Streamable HTTP endpoint backed by the Open
 ---
 
 ## Prerequisites
-- Node.js 24 LTS and npm workspaces installed at the repo root (`npm install`).
+- Node.js 24.x (current release, LTS cutover expected October 2025) and npm workspaces installed at the repo root (`npm install`).
 - Docker/Compose v2 if you plan to run via `scripts/compose.sh`.
 - `.keycloak-env` populated with client credentials for Keycloak automation.
 - Copy `services/openmemory/.env.example` to `.env` and fill in environment-specific values (see below).

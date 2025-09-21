@@ -12,7 +12,7 @@ Provide a quick reference for operating the shared automation scripts that (a) a
 ---
 
 ## Prerequisites
-- Node.js 24 LTS with npm workspaces installed (`npm install` at repo root).
+- Node.js 24.x (pre-LTS, October 2025 promotion expected) with npm workspaces installed (`npm install` at repo root).
 - Docker/Compose v2 available on PATH.
 - `.keycloak-env` populated with service-account credentials for Keycloak automation scripts.
 - Per-service `.env` files copied from the associated `.env.example` templates.
