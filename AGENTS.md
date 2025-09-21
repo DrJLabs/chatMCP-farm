@@ -1,8 +1,27 @@
 # Agents Operating Guide
 
-## Bmad-Method
+## Workspace Snapshot (Architecture v0.1.0 – Draft, updated September 19, 2025)
 
-- Anytime we are utilizing the BMAD method by activating any agent and following workflows, **ALWAYS** update relevant BMAD documentation automatically atbeach step, with particular emphasis on tracking story status properly.
+- Monorepo on Node.js 24 LTS with npm workspaces; Express 4 + `@modelcontextprotocol/sdk` back every MCP service.
+- `packages/mcp-auth-kit` centralizes OAuth, manifest/PRM tooling, JWKS pulls, and Streamable HTTP defaults (enable SSE only when mandated by a client).
+- Deployable MCP services live under `services/*`; `services/openmemory` is the current reference implementation.
+- Automation and scaffolds live in `scripts/` and `templates/service`; use docker-compose to boot Keycloak (`OMA` realm) plus target services locally.
+
+## Current Status & Focus
+
+- Architecture (`docs/architecture.md`) and PRD (`docs/prd.md`) sit at Draft v0.1.0; update their change logs with every material revision.
+- Active workstreams: Epic 1 (workspace foundation), Epic 2 (OpenMemory hardening), Epic 3 (service bootstrap and release tooling).
+- Keep Node 24 tooling, Keycloak automation scripts, and documentation aligned before introducing additional MCP services.
+
+## Required References Before Execution
+
+- Load architecture shards `docs/architecture/tech-stack.md`, `docs/architecture/source-tree.md`, `docs/architecture/coding-standards.md` ahead of implementation.
+- Review runbooks `docs/bootstrap-checklist.md` and `docs/oauth-keycloak.md`; pair with service-level README files and `.env` templates.
+- Uphold secret handling discipline: rely on `.env.example`, `.keycloak-env.example`, and never commit live credentials.
+
+## BMAD Method
+
+- When running BMAD workflows, **ALWAYS** update relevant BMAD documentation at each step and track story status rigorously.
 
 ---
 

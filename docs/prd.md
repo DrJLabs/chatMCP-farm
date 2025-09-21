@@ -1,7 +1,7 @@
 # Chat MCP Farm Product Requirements Document (PRD)
 
-**Version:** 0.1.0  
-**Last Updated:** September 19, 2025  
+**Version:** 0.1.1  
+**Last Updated:** September 20, 2025  
 **Document Owner:** Codex Planning Team  
 **Status:** Draft (Initial)
 
@@ -22,6 +22,7 @@ The `chat-mcp-farm` repository was split from a larger monorepo to focus on host
 ### 1.3 Change Log
 | Date | Version | Description | Author |
 | --- | --- | --- | --- |
+| 2025-09-20 | 0.1.1 | Captured updated automation doc coverage and documentation backlog | Codex |
 | 2025-09-19 | 0.1.0 | Initial PRD drafted for standalone MCP workspace | Codex |
 
 ---
@@ -76,7 +77,7 @@ The `chat-mcp-farm` repository was split from a larger monorepo to focus on host
   - `/debug/config`, `/debug/oidc` – diagnostics for issuers, JWKS, and config.
   - `/healthz` – readiness probe.
 - **MCP Tools:** `ping`, `search`, `fetch`, `write`, `om.search`, `om.add`.
-- **CLI/Automation:** `scripts/kc/*.sh` manage Keycloak scopes, trusted hosts, and status; `scripts/bootstrap.sh` scaffolds services from templates.
+- **CLI/Automation:** `scripts/kc/*.sh` manage Keycloak scopes, trusted hosts, and status; `scripts/bootstrap.sh` scaffolds services from templates; `scripts/compose.sh` aggregates per-service docker configurations; `scripts/render-docs.mjs` renders configuration-aware docs.
 
 ---
 
@@ -170,4 +171,4 @@ Enable team to add new services rapidly with consistent guardrails.
 - **For UX Expert:** Not required; project is backend/service focused.
 - **For Architect:** "Use the PRD to draft the backend architecture focusing on Express-based MCP services, shared auth kit, and Docker-based deployment across environments. Highlight component boundaries between shared package(s) and service implementations."
 - **For QA/Test Architect:** "Design QA gate strategy for MCP services emphasizing OAuth coverage, OpenMemory integration contracts, and smoke test expectations across CI/CD."
-
+- **For Documentation Owner:** "Maintain script coverage across docs—verify `scripts/compose.sh`, `scripts/render-docs.mjs`, and automation READMEs stay in sync and create a dedicated runbook if gaps recur."

@@ -16,8 +16,13 @@
 ## Current Assets
 - `packages/mcp-auth-kit/`: TypeScript helpers providing Keycloak-aware middleware and metadata endpoints.
 - `services/openmemory/`: Reference server consuming the auth kit with docker-compose snippets.
-- `docs/chatgpt-mcp-oauth-generic.md`: End-to-end instructions for Keycloak + ChatGPT Developer Mode.
-- `SETUP_SUMMARY.md`, `.keycloak-env`, `.env`: environment and automation context inside the parent repo.
+- `scripts/compose.sh`: Discovers `services/*/compose.yml` fragments and runs docker-compose with merged stack.
+- `docs/oauth-keycloak.md`: End-to-end instructions for Keycloak + ChatGPT Developer Mode.
+- `docs/bootstrap-checklist.md`: Quickstart checklist mapping repo scripts to bootstrap tasks.
+- `docs/config.sample.json` + `scripts/render-docs.mjs`: Configuration-driven doc rendering pipeline.
+- `docs/runbooks/compose-and-docs.md`: Runbook covering aggregated compose usage, docs rendering, and BMAD activation notes.
+- `scripts/healthcheck.sh`: Automated manifest/PRM/token/initialize validation aligned with the OAuth checklist.
+- `.keycloak-env.example`, `.env.example`: Template environment files to copy before local runs.
 
 ## Proposed Structure (Post-Split)
 ```
@@ -41,6 +46,7 @@ mcp-servers/
 1. **Documentation consolidation**
    - Derive `docs/oauth-keycloak.md` from existing generic checklist with repo-specific paths.
    - Create quickstart checklist focusing on repo-local scripts and environment variables.
+   - Keep `scripts/render-docs.mjs` + `docs/config.sample.json` documented so rendered copies stay aligned with committed sources.
 2. **Tooling alignment**
    - Move docker-compose snippets into `docker/` with environment examples.
    - Codify workspace commands using `npm run --workspaces` / `npm run --workspace <pkg>` so builds/tests stay aligned with npm guidance, and evaluate pnpm or Nx for caching/concurrency as the workspace grows.
@@ -62,9 +68,11 @@ mcp-servers/
 3. Establish shared lint/test tooling (root `npm run lint|test` invoking workspaces) and decide on Nx/pnpm adoption if build parallelism becomes a bottleneck.
 4. Adopt Changesets (or similar) for versioning/publishing strategy ahead of the split.
 5. Draft migration checklist for extracting repo (networks, secrets, Traefik updates).
+6. Validate documentation coverage: ensure architecture/PRD shards and render pipeline reflect current scripts (bootstrap, compose, render-docs).
 
 ## Next Operator Checklist
 - [ ] Wire the root workspace scripts (`lint`, `test`, `build`) to run real targets in every package/service.
+- [x] Publish a short runbook covering `scripts/compose.sh`, doc rendering, and agent activation expectations (`docs/runbooks/compose-and-docs.md`).
 - [ ] Choose and configure release tooling (e.g., Changesets) before publishing `mcp-auth-kit`.
 - [ ] Update docker-compose snippets and CI workflows to reference the new workspace paths.
 - [ ] Draft the migration checklist covering Traefik labels, network separation, and secrets handoff.
