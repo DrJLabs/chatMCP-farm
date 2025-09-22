@@ -203,9 +203,6 @@ function attachUser(res: Response, userId: string) {
 
 function buildEndpointList(config: ResolvedAuthKitOptions): string[] {
   const endpoints = ['/mcp']
-  if (config.enableLegacySse) {
-    endpoints.push('/mcp/sse', '/sse')
-  }
   return endpoints
 }
 
