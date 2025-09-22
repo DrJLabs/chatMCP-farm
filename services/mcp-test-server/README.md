@@ -11,9 +11,10 @@ Deterministic MCP service used to validate our docker-compose orchestration, Key
 ## Environment Setup
 1. Copy `.env.example` to `.env` and update the placeholders.
 2. Minimum required variables:
+   - `CLIENT_ID`, `CLIENT_SECRET`
    - `OIDC_ISSUER`, `OIDC_AUDIENCE`
-   - `MCP_TEST_SERVER_PUBLIC_BASE_URL` (must match the manifest URL exposed to ChatGPT)
-3. Default origin restrictions bind the service to `127.0.0.1`. Override `MCP_ALLOWED_ORIGINS`/`ALLOWED_ORIGINS` only after a security review.
+   - `MCP_PUBLIC_BASE_URL` (alias: `MCP_TEST_SERVER_PUBLIC_BASE_URL`; both accepted by config)
+3. Default binding listens on `0.0.0.0` for container networking. Restrict ingress via Traefik/compose and override `MCP_ALLOWED_ORIGINS`/`ALLOWED_ORIGINS` after a security review.
 
 ## Running Locally
 ```bash
@@ -28,7 +29,7 @@ Story 1.1 defers real smoke script implementation to Story 1.3. Placeholders rem
 
 ## Keycloak Notes
 - Create a confidential client with service-account enabled using the local Keycloak admin (default http://127.0.0.1:5050/auth).
-- Populate redirect URIs/Web Origins even if unused yet (e.g., the ChatGPT callback URL).
+- Dynamic Client Registration (DCR) automatically writes redirect URIs for ChatGPT-managed clients. If you provision a static client instead, allow `https://chatgpt.com/connector_platform_oauth_redirect` explicitly.
 - Export sanitized realm configuration with `./kc_export_realm.sh --realm OMA` after registering the client.
 
 ## Next Steps

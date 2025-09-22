@@ -1,13 +1,13 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 
-const pingInputSchema = {
-  note: z.string().max(240).optional(),
-} as const
+const pingInputSchema = z
+  .object({
+    note: z.string().max(240).optional(),
+  })
+  .strict()
 
-type PingArgs = {
-  note?: string
-}
+type PingArgs = z.infer<typeof pingInputSchema>
 
 export async function buildMcpServer() {
   const server = new McpServer({
@@ -25,16 +25,16 @@ export async function buildMcpServer() {
     {
       description:
         'Returns a deterministic response containing service metadata. Use to confirm OAuth + Streamable HTTP wiring.',
-      inputSchema: pingInputSchema,
+      inputSchema: pingInputSchema.shape,
     },
-    async ({ note }: PingArgs = {}) => ({
+    async (args?: PingArgs) => ({
       content: [
         {
           type: 'text',
           text: JSON.stringify(
             {
               message: 'mcp-test-server online',
-              note: note ?? null,
+              note: args?.note ?? null,
               timestamp: new Date().toISOString(),
               allowedOrigins,
             },

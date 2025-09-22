@@ -1,7 +1,7 @@
 # Chat MCP Farm Architecture Document
 
-**Version:** 0.1.1  
-**Last Updated:** September 20, 2025  
+**Version:** 0.1.2  
+**Last Updated:** September 22, 2025  
 **Author:** Codex Architecture Team  
 **Status:** Draft (Initial)
 
@@ -16,6 +16,7 @@ The project originates from the `mcp-servers` workspace. We retain its monorepo 
 ### 1.2 Change Log
 | Date | Version | Description | Author |
 | --- | --- | --- | --- |
+| 2025-09-22 | 0.1.2 | Refreshed MCP test server references and reviewer automation guidance | Codex |
 | 2025-09-20 | 0.1.1 | Documented script/runtime inventory and doc generation pipeline | Codex |
 | 2025-09-19 | 0.1.0 | Initial architecture draft for standalone MCP workspace | Codex |
 

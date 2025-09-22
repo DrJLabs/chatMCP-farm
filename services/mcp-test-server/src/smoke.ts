@@ -19,22 +19,35 @@ async function main() {
   }
   if (token) headers['authorization'] = `Bearer ${token}`
 
-  const res = await fetch(base, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
-  })
+  const controller = new AbortController()
+  const timeoutMs = Number.parseInt(process.env.SMOKE_TIMEOUT_MS || '10000', 10)
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`HTTP ${res.status}: ${text}`)
+  try {
+    const res = await fetch(base, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    })
+
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(`HTTP ${res.status}: ${text}`)
+    }
+
+    const data = await res.json()
+    console.log('initialize response:', JSON.stringify(data, null, 2))
+  } finally {
+    clearTimeout(timeout)
   }
-
-  const data = await res.json()
-  console.log('initialize response:', JSON.stringify(data, null, 2))
 }
 
-main().catch((err) => {
-  console.error('smoke failed', err)
+main().catch(err => {
+  if (err.name === 'AbortError') {
+    console.error(`smoke failed: request timed out after ${process.env.SMOKE_TIMEOUT_MS || '10000'}ms`)
+  } else {
+    console.error('smoke failed', err)
+  }
   process.exit(1)
 })

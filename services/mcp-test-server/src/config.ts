@@ -2,9 +2,9 @@ import { z } from 'zod'
 
 const EnvSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(8770),
-  MCP_BIND_HOST: z.string().min(1).default('127.0.0.1'),
+  MCP_BIND_HOST: z.string().min(1).default('0.0.0.0'),
   CLIENT_ID: z.string().optional(),
-  CLIENT_SECRET: z.string().optional(),
+  CLIENT_SECRET: z.string().min(1, 'CLIENT_SECRET is required'),
   OIDC_ISSUER: z.string().url('OIDC_ISSUER must be a valid URL'),
   OIDC_AUDIENCE: z.string().min(1, 'OIDC_AUDIENCE is required'),
   MCP_PUBLIC_BASE_URL: z.string().url().default('https://mcp-test.local/mcp'),
@@ -33,11 +33,17 @@ const EnvSchema = z.object({
 export type ServiceEnvConfig = z.infer<typeof EnvSchema>
 
 export function loadServiceEnvConfig(env: NodeJS.ProcessEnv = process.env): ServiceEnvConfig {
-  const parsed = EnvSchema.parse(env)
+  const source = { ...env }
+  if (source.MCP_TEST_SERVER_PUBLIC_BASE_URL && !source.MCP_PUBLIC_BASE_URL) {
+    source.MCP_PUBLIC_BASE_URL = source.MCP_TEST_SERVER_PUBLIC_BASE_URL
+  }
+
+  const parsed = EnvSchema.parse(source)
 
   process.env.PORT = String(parsed.PORT)
   process.env.MCP_BIND_HOST = parsed.MCP_BIND_HOST
   process.env.MCP_PUBLIC_BASE_URL = parsed.MCP_PUBLIC_BASE_URL
+  process.env.MCP_TEST_SERVER_PUBLIC_BASE_URL = parsed.MCP_PUBLIC_BASE_URL
   process.env.PRM_RESOURCE_URL = parsed.PRM_RESOURCE_URL ?? parsed.MCP_PUBLIC_BASE_URL
   process.env.REQUIRE_AUTH = parsed.REQUIRE_AUTH ? 'true' : 'false'
   process.env.ENABLE_STREAMABLE = parsed.ENABLE_STREAMABLE ? 'true' : 'false'

@@ -58,7 +58,7 @@ Automation tip: `scripts/kc/create_mcp_scope.sh --resource <MCP_PUBLIC_BASE_URL>
 
 ### 2.4 Redirect URIs and origins
 
-ChatGPT-managed clients register redirect URIs automatically during Dynamic Client Registration. Ensure your Trusted Hosts policy (see §2.2) covers the ChatGPT domains and any of your own domains you expose; no manual URI list is required.
+Redirect URIs for ChatGPT-managed clients are registered automatically during Dynamic Client Registration (DCR). Ensure your Trusted Hosts policy (see §2.2) covers ChatGPT domains and any of your own domains; no manual URI list is required for DCR flows. For static/non-DCR clients, explicitly allow `https://chatgpt.com/connector_platform_oauth_redirect` and any additional callback domains you operate.
 
 ### 2.5 Token endpoint quirks
 
@@ -117,7 +117,7 @@ ChatGPT-managed clients register redirect URIs automatically during Dynamic Clie
 2. **Trusted Hosts policy is mandatory**: Without the expanded allowlist and relaxed host matching, DCR fails with `Policy 'Trusted Hosts' rejected request to client-registration service`.
 3. **Consent loop**: After you click **Yes**, Keycloak logs show a consent POST followed by `/token` calls from `Python/3.12 aiohttp/3.9.5`. Only after a successful token exchange does ChatGPT call `/mcp`.
 4. **Audience enforcement**: The access token must include `aud=<MCP_PUBLIC_BASE_URL>`. Missing audience manifests as 401s in MCP logs (`[AUTH] 401 unauthorized ... openai-mcp/1.0.0`).
-5. **Redirect URIs**: ChatGPT may choose any of the four URIs in §2.4. Always provision them before testing.
+5. **Redirect URIs**: With DCR, ChatGPT registers the redirect URI automatically; do not pre-provision. If testing a static/non-DCR client, add `https://chatgpt.com/connector_platform_oauth_redirect` explicitly.
 6. **Discovery probes**: Expect numerous 404/308 requests against `/.well-known/**` paths. Ensure 308 redirects target the Keycloak issuer metadata.
 7. **Token endpoint auth**: ChatGPT sends `Authorization: Basic ...` (client credentials) on `/token`. Keep `client_secret_basic` enabled.
 8. **Scopes requested**: Typical request asks for `address microprofile-jwt organization phone`. Those scopes must exist (as optional/default client scopes) or Keycloak refuses the request.
