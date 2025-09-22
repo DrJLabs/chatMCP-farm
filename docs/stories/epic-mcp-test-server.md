@@ -16,9 +16,9 @@ Deliver a minimal MCP-compliant server that validates our docker-compose orchest
 - Success criteria: Docker Compose stack boots with the new server, OAuth token exchange succeeds, ChatGPT can query the server via manifest + secret, and smoke documentation captures the full procedure.
 
 ## Stories
-1. **Story 1:** Scaffold `mcp-test-server` service with baseline Express/MCP wiring and align env/compose templates.
-2. **Story 2:** Implement OAuth manifest + tool behaviour to exercise auth and return verifiable responses.
-3. **Story 3:** Produce compose integration, test scripts, and ChatGPT connection runbook validating end-to-end flow.
+- [ ] **Story 1:** Scaffold `mcp-test-server` service with baseline Express/MCP wiring and align env/compose templates.
+- [x] **Story 2:** Implement OAuth manifest + tool behaviour to exercise auth and return verifiable responses. _(Completed 2025-09-22; follow-up logged for search/fetch stubs.)_
+- [ ] **Story 3:** Produce compose integration, test scripts, and ChatGPT connection runbook validating end-to-end flow.
 
 ## Compatibility Requirements
 - [ ] Existing APIs remain unchanged
