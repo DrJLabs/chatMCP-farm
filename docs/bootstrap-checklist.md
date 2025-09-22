@@ -32,7 +32,7 @@ This quickstart distills the OAuth and infrastructure requirements for bringing 
    - `npm run build --workspace <service>`
    - `scripts/compose.sh up --build <service-name>` (auto-includes every `services/*/compose.yml`)
    - Run validation commands from the "Streamable HTTP transport" section of `docs/oauth-keycloak.md`.
-   - Optionally execute `CLIENT_ID=<id> CLIENT_SECRET=<secret> scripts/healthcheck.sh --base-url <MCP_TRANSPORT_URL> --issuer <KC_ISSUER> --client-id <id>` to automate the manifest/PRM/token/initialize checks (prefer environment variables over CLI flags to keep secrets out of process lists).
+  - Optionally execute `source .keycloak-env && CLIENT_ID=$KC_CLIENT_ID CLIENT_SECRET=$KC_CLIENT_SECRET scripts/healthcheck.sh --base-url <MCP_TRANSPORT_URL> --issuer <KC_ISSUER> --client-id $KC_CLIENT_ID` to automate the manifest/PRM/token/initialize checks while keeping credentials in `.keycloak-env`.
    - Optional SSE fallback: set `ENABLE_SSE=true` before starting the service, then run `npm run smoke:sse --workspace <service>` to validate legacy clients.
 5. **ChatGPT connector**
    - Initiate Developer Mode connector setup; confirm DCR creates client with `{{MCP_SCOPE_NAME}}` scope.

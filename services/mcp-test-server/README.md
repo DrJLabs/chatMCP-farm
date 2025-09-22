@@ -11,7 +11,6 @@ Deterministic MCP service used to validate our docker-compose orchestration, Key
 ## Environment Setup
 1. Copy `.env.example` to `.env` and update the placeholders.
 2. Minimum required variables:
-   - `CLIENT_ID`, `CLIENT_SECRET`
    - `OIDC_ISSUER`, `OIDC_AUDIENCE`
    - `MCP_PUBLIC_BASE_URL` (alias: `MCP_TEST_SERVER_PUBLIC_BASE_URL`; both accepted by config)
 3. Default binding listens on `0.0.0.0` for container networking. Restrict ingress via Traefik/compose and override `MCP_ALLOWED_ORIGINS`/`ALLOWED_ORIGINS` after a security review.

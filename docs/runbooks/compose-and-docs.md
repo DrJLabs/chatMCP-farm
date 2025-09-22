@@ -74,15 +74,16 @@ Provide a quick reference for operating the shared automation scripts that (a) a
 ## Healthcheck Script (`scripts/healthcheck.sh`)
 1. **Basic usage**
    ```bash
-   CLIENT_ID="$CLIENT_ID" CLIENT_SECRET="$CLIENT_SECRET" \
+   source .keycloak-env
+   CLIENT_ID="$KC_CLIENT_ID" CLIENT_SECRET="$KC_CLIENT_SECRET" \
    scripts/healthcheck.sh \
      --base-url https://memory.example.com/mcp \
      --issuer https://keycloak.example.com/realms/OMA \
      --sse
    ```
-   - Reads defaults from `MCP_TRANSPORT_URL` (falls back to `MCP_PUBLIC_BASE_URL`), `KC_ISSUER`, `CLIENT_ID`, and `CLIENT_SECRET` when flags are omitted. `PRM_RESOURCE_URL` overrides the derived protected resource URL when set.
+   - Reads defaults from `MCP_TRANSPORT_URL` (falls back to `MCP_PUBLIC_BASE_URL`) and `KC_ISSUER`. Pass `CLIENT_ID`/`CLIENT_SECRET` by exporting the sourced `.keycloak-env` values when invoking the script. `PRM_RESOURCE_URL` overrides the derived protected resource URL when set.
    - Requires `jq` and `curl` on PATH.
-   - Prefer environment variables for `CLIENT_SECRET` to avoid exposing credentials via `ps`/shell history; the script logs a warning when the flag is used.
+   - Keep secrets inside `.keycloak-env`; avoid supplying them directly via CLI flags unless necessary.
 2. **Checks performed**
    - Manifest availability and schema version (`.well-known/mcp/manifest.json`).
    - Protected resource metadata (`.well-known/oauth-protected-resource`).

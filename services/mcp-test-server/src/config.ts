@@ -3,8 +3,6 @@ import { z } from 'zod'
 const EnvSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(8770),
   MCP_BIND_HOST: z.string().min(1).default('0.0.0.0'),
-  CLIENT_ID: z.string().optional(),
-  CLIENT_SECRET: z.string().min(1, 'CLIENT_SECRET is required'),
   OIDC_ISSUER: z.string().url('OIDC_ISSUER must be a valid URL'),
   OIDC_AUDIENCE: z.string().min(1, 'OIDC_AUDIENCE is required'),
   MCP_PUBLIC_BASE_URL: z.string().url().default('https://mcp-test.local/mcp'),
@@ -51,8 +49,6 @@ export function loadServiceEnvConfig(env: NodeJS.ProcessEnv = process.env): Serv
   process.env.DEBUG_HEADERS = parsed.DEBUG_HEADERS ? 'true' : 'false'
   process.env.MCP_ALLOWED_ORIGINS = parsed.MCP_ALLOWED_ORIGINS
   process.env.ALLOWED_ORIGINS = parsed.MCP_ALLOWED_ORIGINS
-  if (parsed.CLIENT_ID) process.env.CLIENT_ID = parsed.CLIENT_ID
-  if (parsed.CLIENT_SECRET) process.env.CLIENT_SECRET = parsed.CLIENT_SECRET
   process.env.OIDC_ISSUER = parsed.OIDC_ISSUER
   process.env.OIDC_AUDIENCE = parsed.OIDC_AUDIENCE
 

@@ -146,11 +146,11 @@ Redirect URIs for ChatGPT-managed clients are registered automatically during Dy
    Then confirm the new client’s `defaultClientScopes` includes `{{MCP_SCOPE_NAME}}`.
 4. **Token audience check**
    ```bash
-   CLIENT_ID=...; CLIENT_SECRET=...
+   source .keycloak-env
    curl -s -o token.json -w '%{http_code}' \
      -X POST {{KC_ISSUER}}/protocol/openid-connect/token \
      -H 'content-type: application/x-www-form-urlencoded' \
-    -d "grant_type=client_credentials&client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET&resource=<MCP_PUBLIC_BASE_URL>"
+     -d "grant_type=client_credentials&client_id=$KC_CLIENT_ID&client_secret=$KC_CLIENT_SECRET&resource=<MCP_PUBLIC_BASE_URL>"
    jq -r '.access_token' token.json | awk -F. '{print $2}' | base64 -d | jq '.aud'
    ```
 5. **MCP initialize/call**
