@@ -59,7 +59,6 @@ function normalizeServiceEnv(env: NodeJS.ProcessEnv) {
   const source = { ...env }
 
   copyIfPresent(source, 'MCP_TEST_SERVER_PORT', 'PORT')
-  copyIfPresent(source, 'PORT', 'PORT')
   copyIfPresent(source, 'MCP_TEST_SERVER_BIND_HOST', 'MCP_BIND_HOST')
   copyIfPresent(source, 'MCP_TEST_SERVER_PUBLIC_BASE_URL', 'MCP_PUBLIC_BASE_URL')
   copyIfPresent(source, 'MCP_TEST_SERVER_PRM_URL', 'PRM_RESOURCE_URL')

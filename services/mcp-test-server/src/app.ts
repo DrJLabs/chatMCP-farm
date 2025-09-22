@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import express, { type NextFunction, type Request, type Response } from 'express'
+import express, { type Request, type Response } from 'express'
 import morgan from 'morgan'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { createAuthKit, loadAuthKitOptionsFromEnv, type AuthKitContext } from 'mcp-auth-kit'
@@ -21,9 +21,6 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   const envConfig = loadServiceEnvConfig(envSource)
   const authEnv = buildAuthEnv(envConfig, envSource)
   const authKit = createAuthKit(loadAuthKitOptionsFromEnv(authEnv))
-  const allowedOrigins = envConfig.MCP_ALLOWED_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean)
-  const allowedOriginSet = new Set(allowedOrigins)
-
   const app = express()
   app.set('trust proxy', true)
 
@@ -32,23 +29,11 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   morgan.token('authFlag', req => (req.headers.authorization ? 'present' : 'absent'))
   app.use(morgan(':date[iso] :remote-addr :method :url :status :res[content-length] auth=:authFlag'))
 
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    const origin = req.headers.origin
-    if (origin && !allowedOriginSet.has(origin)) {
-      if (authKit.config.requireAuth) authKit.setChallengeHeaders(res)
-      return res.status(403).json({
-        error: 'origin_forbidden',
-        message: `Origin ${origin} is not permitted. Update MCP_ALLOWED_ORIGINS/ALLOWED_ORIGINS to override.`,
-      })
-    }
-    next()
-  })
-
   app.use(authKit.originCheck)
   app.use(authKit.cors)
   app.use(express.json({ limit: '1mb' }))
 
-  const manifestHandler = buildManifestHandler(authKit, allowedOrigins)
+  const manifestHandler = buildManifestHandler(authKit)
 
   app.get('/.well-known/mcp/manifest.json', manifestHandler)
   app.get('/.well-known/oauth-protected-resource', (req, res) => {
@@ -71,14 +56,14 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
         sse: authKit.config.enableLegacySse,
       },
       resource: authKit.config.resourceUrl,
-      allowedOrigins,
+      allowedOrigins: authKit.config.allowedOrigins,
       tools: [diagnosticsToolMetadata],
     })
   })
 
   app.get('/healthz', (_req, res) => res.json({ ok: true, service: 'mcp-test-server' }))
 
-  const mcpServer = await buildMcpServer({ allowedOrigins })
+  const mcpServer = await buildMcpServer({ allowedOrigins: authKit.config.allowedOrigins })
 
   function ensureAcceptHeader(req: Request, res: Response) {
     const accept = `${req.headers['accept'] || ''}`
@@ -119,7 +104,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     if (!ensureAcceptHeader(req, res)) return
     try {
       const sid = req.headers['mcp-session-id'] as string | undefined
-      const transport = sid ? transports.get(sid) ?? (await createTransport()) : await createTransport()
+      const transport = (sid && transports.get(sid)) ?? (await createTransport())
       await transport.handleRequest(req as any, res as any, (req as any).body)
     } catch (err) {
       console.error('Streamable POST error', err)
@@ -174,7 +159,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   return { app, envConfig, authKit }
 }
 
-function buildManifestHandler(authKit: AuthKitContext, allowedOrigins: string[]) {
+function buildManifestHandler(authKit: AuthKitContext) {
   const fallbackName = 'MCP Service'
   const fallbackModelName = 'mcp_service'
   const fallbackDescriptionHuman = 'OAuth-protected Model Context Protocol server.'
@@ -213,17 +198,23 @@ function buildManifestHandler(authKit: AuthKitContext, allowedOrigins: string[])
       ],
       metadata: {
         resource: authKit.config.resourceUrl,
-        allowedOrigins,
+        allowedOrigins: authKit.config.allowedOrigins,
       },
-      debug: authKit.config.debugHeaders ? { headers: req.headers } : undefined,
+      debug: authKit.config.debugHeaders ? { headers: redactHeaders(req.headers) } : undefined,
     })
   }
 }
 
 function buildEndpointsList(authKit: AuthKitContext) {
   const endpoints = ['/mcp']
-  if (authKit.config.enableLegacySse) {
-    endpoints.push('/mcp/sse', '/sse')
-  }
   return endpoints
+}
+
+function redactHeaders(headers: Request['headers']) {
+  const clone: Record<string, unknown> = { ...headers }
+  const authKey = Object.keys(clone).find(key => key.toLowerCase() === 'authorization')
+  if (authKey) {
+    clone[authKey] = 'Bearer <redacted>'
+  }
+  return clone
 }
