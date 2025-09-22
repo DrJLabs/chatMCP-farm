@@ -58,13 +58,7 @@ Automation tip: `scripts/kc/create_mcp_scope.sh --resource <MCP_PUBLIC_BASE_URL>
 
 ### 2.4 Redirect URIs and origins
 
-- `{{OIDC_AUDIENCE}}` (pre-provisioned) must allow:
-  - `https://chatgpt.com/connector_platform_oauth_redirect`
-  - `https://chatgpt.com/oauth/callback`
-  - `https://chat.openai.com/oauth/callback`
-  - `https://chat.openai.com/aip/<id>/oauth/callback`
-- Keep web origins: `https://chatgpt.com`, `https://chat.openai.com`, plus our domains.
-- ChatGPT-created UUID clients default to `https://chatgpt.com/connector_platform_oauth_redirect`; no additional URIs required.
+Redirect URIs for ChatGPT-managed clients are registered automatically during Dynamic Client Registration (DCR). Ensure your Trusted Hosts policy (see §2.2) covers ChatGPT domains and any of your own domains; no manual URI list is required for DCR flows. For static/non-DCR clients, explicitly allow `https://chatgpt.com/connector_platform_oauth_redirect` and any additional callback domains you operate.
 
 ### 2.5 Token endpoint quirks
 
@@ -123,7 +117,7 @@ Automation tip: `scripts/kc/create_mcp_scope.sh --resource <MCP_PUBLIC_BASE_URL>
 2. **Trusted Hosts policy is mandatory**: Without the expanded allowlist and relaxed host matching, DCR fails with `Policy 'Trusted Hosts' rejected request to client-registration service`.
 3. **Consent loop**: After you click **Yes**, Keycloak logs show a consent POST followed by `/token` calls from `Python/3.12 aiohttp/3.9.5`. Only after a successful token exchange does ChatGPT call `/mcp`.
 4. **Audience enforcement**: The access token must include `aud=<MCP_PUBLIC_BASE_URL>`. Missing audience manifests as 401s in MCP logs (`[AUTH] 401 unauthorized ... openai-mcp/1.0.0`).
-5. **Redirect URIs**: ChatGPT may choose any of the four URIs in §2.4. Always provision them before testing.
+5. **Redirect URIs**: With DCR, ChatGPT registers the redirect URI automatically; do not pre-provision. If testing a static/non-DCR client, add `https://chatgpt.com/connector_platform_oauth_redirect` explicitly.
 6. **Discovery probes**: Expect numerous 404/308 requests against `/.well-known/**` paths. Ensure 308 redirects target the Keycloak issuer metadata.
 7. **Token endpoint auth**: ChatGPT sends `Authorization: Basic ...` (client credentials) on `/token`. Keep `client_secret_basic` enabled.
 8. **Scopes requested**: Typical request asks for `address microprofile-jwt organization phone`. Those scopes must exist (as optional/default client scopes) or Keycloak refuses the request.
@@ -152,11 +146,11 @@ Automation tip: `scripts/kc/create_mcp_scope.sh --resource <MCP_PUBLIC_BASE_URL>
    Then confirm the new client’s `defaultClientScopes` includes `{{MCP_SCOPE_NAME}}`.
 4. **Token audience check**
    ```bash
-   CLIENT_ID=...; CLIENT_SECRET=...
+   source .keycloak-env
    curl -s -o token.json -w '%{http_code}' \
      -X POST {{KC_ISSUER}}/protocol/openid-connect/token \
      -H 'content-type: application/x-www-form-urlencoded' \
-    -d "grant_type=client_credentials&client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET&resource=<MCP_PUBLIC_BASE_URL>"
+     -d "grant_type=client_credentials&client_id=$KC_CLIENT_ID&client_secret=$KC_CLIENT_SECRET&resource=<MCP_PUBLIC_BASE_URL>"
    jq -r '.access_token' token.json | awk -F. '{print $2}' | base64 -d | jq '.aud'
    ```
 5. **MCP initialize/call**

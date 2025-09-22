@@ -4,7 +4,7 @@ A reusable workspace for building OAuth-protected Model Context Protocol servers
 
 ## What’s Inside
 
-- **`services/openmemory/`** – example MCP service wired to the auth kit and compose tooling.
+- **`services/mcp-test-server/`** – deterministic MCP diagnostics service wired to the auth kit and compose tooling.
 - **`packages/mcp-auth-kit/`** – Express utilities that load env-based config, enforce OAuth audiences, and expose manifest/PRM handlers (see `AUTH_ENV_VARS`).
 - **`scripts/kc/`** – client-credential automation for Keycloak (no local container required).
 - **`templates/service/`** – scaffolding for new MCP services (Dockerfile, env template, compose fragment).

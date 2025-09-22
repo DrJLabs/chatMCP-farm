@@ -12,5 +12,5 @@
 | Containerization | Docker + docker-compose | Local orchestration and image packaging |
 | Scripts | Bash (`scripts/kc/*.sh`) | Wrap `kcadm` for Keycloak automation |
 | Package Manager | npm workspaces | Monorepo coordination |
-| Testing | Node smoke scripts (`smoke.ts`, `smoke_sse.ts`) | Validate transports and OpenMemory integration |
+| Testing | Node smoke scripts (`smoke.ts`) | Validate transports and diagnostics tooling for MCP test server |
 | Documentation | Markdown in `docs/` | BMad-compliant PRD & architecture shards |

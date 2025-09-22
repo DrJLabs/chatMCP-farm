@@ -34,7 +34,7 @@ Provide a quick reference for operating the shared automation scripts that (a) a
    scripts/compose.sh up --build
    ```
    - Discovers every `services/*/compose.yml` plus the root `docker-compose.yml` and forwards arguments directly to `docker compose`.
-   - Add `-d` for detached runs; pass service names to limit scope (`scripts/compose.sh up --build openmemory`).
+   - Add `-d` for detached runs; pass service names to limit scope (`scripts/compose.sh up --build mcp-test-server`).
 4. **Tear down**
    ```bash
    scripts/compose.sh down --remove-orphans
@@ -42,7 +42,7 @@ Provide a quick reference for operating the shared automation scripts that (a) a
    - Removes only containers started by the aggregated stack. External networks defined in `.env` remain untouched.
 5. **Logs & inspection**
    ```bash
-   scripts/compose.sh logs -f openmemory
+   scripts/compose.sh logs -f mcp-test-server
    scripts/compose.sh ps
    ```
    - Use standard docker-compose flags; the wrapper simply composes the file list.
@@ -74,15 +74,16 @@ Provide a quick reference for operating the shared automation scripts that (a) a
 ## Healthcheck Script (`scripts/healthcheck.sh`)
 1. **Basic usage**
    ```bash
-   CLIENT_ID="$CLIENT_ID" CLIENT_SECRET="$CLIENT_SECRET" \
+   source .keycloak-env
+   CLIENT_ID="$KC_CLIENT_ID" CLIENT_SECRET="$KC_CLIENT_SECRET" \
    scripts/healthcheck.sh \
      --base-url https://memory.example.com/mcp \
      --issuer https://keycloak.example.com/realms/OMA \
      --sse
    ```
-   - Reads defaults from `MCP_TRANSPORT_URL` (falls back to `MCP_PUBLIC_BASE_URL`), `KC_ISSUER`, `CLIENT_ID`, and `CLIENT_SECRET` when flags are omitted. `PRM_RESOURCE_URL` overrides the derived protected resource URL when set.
+   - Reads defaults from `MCP_TRANSPORT_URL` (falls back to `MCP_PUBLIC_BASE_URL`) and `KC_ISSUER`. Pass `CLIENT_ID`/`CLIENT_SECRET` by exporting the sourced `.keycloak-env` values when invoking the script. `PRM_RESOURCE_URL` overrides the derived protected resource URL when set.
    - Requires `jq` and `curl` on PATH.
-   - Prefer environment variables for `CLIENT_SECRET` to avoid exposing credentials via `ps`/shell history; the script logs a warning when the flag is used.
+   - Keep secrets inside `.keycloak-env`; avoid supplying them directly via CLI flags unless necessary.
 2. **Checks performed**
    - Manifest availability and schema version (`.well-known/mcp/manifest.json`).
    - Protected resource metadata (`.well-known/oauth-protected-resource`).
@@ -103,7 +104,7 @@ Provide a quick reference for operating the shared automation scripts that (a) a
    - Before coding, load `docs/architecture/tech-stack.md`, `docs/architecture/source-tree.md`, and `docs/architecture/coding-standards.md` (reinforced in `AGENTS.md`).
    - Reference this runbook when tasks involve local compose orchestration or documentation rendering.
 3. **Documentation Logging**
-   - Record substantive decisions via `openmemory.add_memories` with `project=chat-mcp-farm` tags (see `AGENTS.md` Turn Lifecycle).
+   - Record substantive decisions via `openmemory.add_memories` (legacy reference; continue to tag decisions with the test server context) with `project=chat-mcp-farm` tags (see `AGENTS.md` Turn Lifecycle).
    - Include links to generated artifacts (e.g., `docs/.generated/...`) instead of embedding raw content.
 
 ---

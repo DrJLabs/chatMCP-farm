@@ -6,7 +6,7 @@
 - Keep operational runbooks and validation playbooks collocated with code.
 
 ## Background
-`chat-mcp-farm` is a spin-out of the original `mcp-servers` workspace. The current assets include the `openmemory` service, the reusable `mcp-auth-kit` package, Keycloak automation scripts, and scoped documentation. The project now focuses on hardening these foundations and ensuring future services inherit the same secure defaults.
+`chat-mcp-farm` is a spin-out of the original `mcp-servers` workspace. The current assets include the MCP test server, the reusable `mcp-auth-kit` package, Keycloak automation scripts, and scoped documentation. The project now focuses on hardening these foundations and ensuring future services inherit the same secure defaults.
 
 ## Change Log
 | Date | Version | Notes |

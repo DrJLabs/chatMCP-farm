@@ -25,6 +25,3 @@ yarn-error.log*
 .idea/
 .vscode/
 .DS_Store
-# BMAD (local only)
-.bmad-core/
-.bmad-*/

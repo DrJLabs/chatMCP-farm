@@ -1,7 +1,7 @@
 # Chat MCP Farm Architecture Document
 
-**Version:** 0.1.1  
-**Last Updated:** September 20, 2025  
+**Version:** 0.1.2  
+**Last Updated:** September 22, 2025  
 **Author:** Codex Architecture Team  
 **Status:** Draft (Initial)
 
@@ -11,11 +11,12 @@
 This document captures the backend architecture for the Chat MCP Farm workspace. It establishes component boundaries, technology choices, operational standards, and security expectations that govern every MCP service hosted in this repository.
 
 ### 1.1 Starter Template or Existing Project
-The project originates from the `mcp-servers` workspace. We retain its monorepo layout, the `openmemory` reference service, templates, and automation scripts. No external starter template is required; future services should be generated via `scripts/bootstrap.sh` which copies the maintained template under `templates/service`.
+The project originates from the `mcp-servers` workspace. We retain its monorepo layout, the MCP test server reference implementation, templates, and automation scripts. No external starter template is required; future services should be generated via `scripts/bootstrap.sh` which copies the maintained template under `templates/service`.
 
 ### 1.2 Change Log
 | Date | Version | Description | Author |
 | --- | --- | --- | --- |
+| 2025-09-22 | 0.1.2 | Refreshed MCP test server references and reviewer automation guidance | Codex |
 | 2025-09-20 | 0.1.1 | Documented script/runtime inventory and doc generation pipeline | Codex |
 | 2025-09-19 | 0.1.0 | Initial architecture draft for standalone MCP workspace | Codex |
 
@@ -24,14 +25,14 @@ The project originates from the `mcp-servers` workspace. We retain its monorepo 
 ## 2. High-Level Architecture
 
 ### 2.1 Technical Summary
-Chat MCP Farm is a Node.js/TypeScript monorepo that ships OAuth-secured MCP services. Each service is an Express application wrapped with `mcp-auth-kit` for Keycloak integration and exposes Streamable HTTP transport by default; SSE is implemented only for clients that explicitly require it. Shared packages live under `packages/`, deployable services under `services/`, and automation under `scripts/`. Docker images deliver services behind ingress (Traefik/Cloudflare) and depend on external systems such as Keycloak for authorization plus whatever downstream API each server targets (the `openmemory` MCP is simply the first proven example).
+Chat MCP Farm is a Node.js/TypeScript monorepo that ships OAuth-secured MCP services. Each service is an Express application wrapped with `mcp-auth-kit` for Keycloak integration and exposes Streamable HTTP transport by default; SSE is implemented only for clients that explicitly require it. Shared packages live under `packages/`, deployable services under `services/`, and automation under `scripts/`. Docker images deliver services behind ingress (Traefik/Cloudflare) and depend on external systems such as Keycloak for authorization plus whatever downstream API or diagnostics harness each server targets (the MCP test server is the current reference).
 
 ### 2.2 High-Level Overview
 - **Architecture Style:** Modular monolith within a monorepo; each MCP service is a deployable container sharing infrastructure tooling.
 - **Repository Structure:** npm workspaces; shared base configs (`tsconfig.base.json`), root scripts orchestrate builds/tests.
 - **Tooling & Automation:** `scripts/bootstrap.sh` scaffolds services, `scripts/compose.sh` merges per-service compose files, and `scripts/render-docs.mjs` applies configuration overlays during documentation renders.
 - **Service Boundary:** `packages/mcp-auth-kit` centralizes auth behaviour; each entry under `services/*` consumes it and exposes domain-specific MCP tools for its chosen downstream integration.
-- **Primary Flow:** ChatGPT Developer Mode → Ingress → MCP Service (Express) → Auth kit verifies bearer token via Keycloak → Service executes domain logic against its target system (for example, the OpenMemory REST API) → Response streamed back to client.
+- **Primary Flow:** ChatGPT Developer Mode → Ingress → MCP Service (Express) → Auth kit verifies bearer token via Keycloak → Service executes domain logic against its target system (for example, target APIs exercised by the MCP test server) → Response streamed back to client.
 - **Key Decisions:** Enforce OAuth by default, keep automation local, standardize on Streamable HTTP transport (add SSE only when explicitly required), prefer TypeScript strict mode, treat docs as first-class assets.
 
 ### 2.3 High-Level Diagram
@@ -42,7 +43,7 @@ graph LR
   C[Express MCP Service]
   D[MCP Auth Kit]
   E[Keycloak OIDC]
-  F[Downstream API (e.g., OpenMemory)]
+  F[Downstream API (e.g., target test harness)]
 
   A -- MCP Manifest / Streamable HTTP --> B
   B -- Forwarded HTTPS --> C
@@ -70,7 +71,7 @@ graph LR
 
 ### 3.2 Services (`services/*`)
 - **Transport Layer:** Each MCP service is an Express app instrumented with `morgan`, Streamable HTTP endpoints, request ID middleware, and debug endpoints delivered through the auth kit. SSE routes are added only when a target client cannot consume Streamable HTTP.
-- **Domain Logic:** `mcp.ts` (or equivalent) registers tools with `@modelcontextprotocol/sdk` and brokers calls to the service's downstream system. The `openmemory` directory demonstrates this pattern against the OpenMemory REST API but is not a shared dependency.
+- **Domain Logic:** `mcp.ts` (or equivalent) registers tools with `@modelcontextprotocol/sdk` and brokers calls to the service's downstream system. The service directory demonstrates this pattern for the MCP test server but can be adapted to other downstream systems.
 - **Configuration:** Environment variables define base URLs, credentials, and transport toggles (e.g., enabling legacy SSE) per service; no global runtime contract beyond the auth kit.
 
 ### 3.3 Templates & Scripts
@@ -88,7 +89,7 @@ graph LR
 1. Client fetches manifest from MCP service via ingress. Manifest served using auth kit defaults.
 2. Client obtains OAuth token from Keycloak (outside scope of service).
 3. Client invokes `/mcp` or `/sse`; auth guard validates bearer token audience and issuer using JWKS.
-4. Service executes requested tool logic (for example, invoking a downstream REST API such as OpenMemory) and streams the response.
+4. Service executes requested tool logic (for example, invoking its downstream REST API or harness) and streams the response.
 5. Request/response metadata logged with request ID and auth flag.
 
 ### 4.2 Deployment Environments
@@ -97,7 +98,7 @@ graph LR
 - **Production:** Container deployed behind Cloudflare / Traefik with trusted host entries; replicates staging configuration with tightened allowed origins and secrets from secure store.
 
 ### 4.3 Scaling Strategy
-- Single container per service with horizontal scaling managed by the orchestrator (Kubernetes or container platform). Services are stateless; scale-out requires consistent environment variables and shared secrets. Each downstream API (e.g., OpenMemory) must tolerate the resulting concurrency.
+- Single container per service with horizontal scaling managed by the orchestrator (Kubernetes or container platform). Services are stateless; scale-out requires consistent environment variables and shared secrets. Each downstream API or harness must tolerate the resulting concurrency.
 
 ---
 
@@ -112,8 +113,8 @@ graph LR
 ## 6. Data & Integrations
 - **External APIs:**
   - Keycloak OIDC endpoints for token validation and metadata.
-  - Service-specific downstream APIs (the current example is the OpenMemory API).
-- **Data Storage:** No shared database; each service depends on its downstream system. For the openmemory example this means relying on the OpenMemory backend, while future services can document their own data sources.
+  - Service-specific downstream APIs or harnesses defined per service.
+- **Data Storage:** No shared database; each service depends on its downstream system. For the MCP test server this means providing deterministic tooling, while future services can document their own data sources.
 - **Configuration Sources:** Environment variables injected via `.env`, `.keycloak-env`, or orchestrator secrets.
 
 ---
@@ -139,7 +140,7 @@ graph LR
 
 ## 9. Testing Strategy
 - **Unit Tests:** Target reusable modules in `packages/` and isolated logic in services (e.g., request builders, error handlers).
-- **Integration Tests:** Smoke Streamable HTTP flows using the service's downstream mock or sandbox (OpenMemory today), and verify OAuth enforcement by hitting endpoints with/without tokens. Add SSE parity checks only when a service exposes that legacy path.
+- **Integration Tests:** Smoke Streamable HTTP flows using the service's downstream mock or sandbox (the MCP test server today), and verify OAuth enforcement by hitting endpoints with/without tokens. Add SSE parity checks only when a service exposes that legacy path.
 - **End-to-End:** Validate handshake between ChatGPT Developer Mode and deployed service via manifest, PRM, token exchange, tool invocation.
 - **CI Gates:** Lint + unit + smoke tests required before merge. Security scanning (npm audit, dependency review) to be added.
 
@@ -149,7 +150,7 @@ graph LR
 - **Configuration Promotion:** Manage `.env` templates per environment; commit templates but not secrets.
 - **Rollback:** Redeploy previous container image tag; ensure migrations (if introduced) are idempotent.
 - **Incident Response:** On auth failures, review `/debug/oidc` output, confirm audiences/trusted hosts, inspect logs with request ID correlation.
-- **Capacity Planning:** Monitor downstream API quotas (OpenMemory and others) and scale service containers as needed based on request throughput.
+- **Capacity Planning:** Monitor downstream API quotas or rate limits for any integrated systems and scale service containers as needed based on request throughput.
 
 ---
 
