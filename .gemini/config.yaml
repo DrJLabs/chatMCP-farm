@@ -1,2 +1,4 @@
 ignore_patterns:
+  - ".bmad-core"
   - ".bmad-core/**"
+  - "**/.bmad-core/**"
