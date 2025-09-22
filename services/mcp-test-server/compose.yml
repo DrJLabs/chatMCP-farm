@@ -1,0 +1,46 @@
+services:
+  mcp-test-server:
+    profiles:
+      - mcp-test-server
+    build:
+      context: ${MCP_TEST_SERVER_BUILD_CONTEXT:-./services/mcp-test-server}
+    env_file:
+      - ./services/mcp-test-server/.env
+    environment:
+      PORT: ${MCP_TEST_SERVER_PORT:-8770}
+      MCP_BIND_HOST: ${MCP_TEST_SERVER_BIND_HOST:-127.0.0.1}
+      REQUIRE_AUTH: ${MCP_TEST_SERVER_REQUIRE_AUTH:-true}
+      ENABLE_STREAMABLE: ${MCP_TEST_SERVER_ENABLE_STREAMABLE:-true}
+      ENABLE_SSE: ${MCP_TEST_SERVER_ENABLE_SSE:-false}
+      MCP_PUBLIC_BASE_URL: ${MCP_TEST_SERVER_PUBLIC_BASE_URL:-https://mcp-test-server.example.com/mcp}
+      PRM_RESOURCE_URL: ${MCP_TEST_SERVER_PRM_URL:-https://mcp-test-server.example.com/mcp}
+      MCP_ALLOWED_ORIGINS: ${MCP_TEST_SERVER_ALLOWED_ORIGINS:-http://127.0.0.1:3333,http://localhost:3333}
+      OIDC_ISSUER: ${MCP_TEST_SERVER_OIDC_ISSUER}
+      OIDC_AUDIENCE: ${MCP_TEST_SERVER_OIDC_AUDIENCE}
+      DEBUG_HEADERS: ${MCP_TEST_SERVER_DEBUG_HEADERS:-false}
+    healthcheck:
+      test: ['CMD-SHELL', 'node', '-e', "fetch('http://127.0.0.1:${MCP_TEST_SERVER_PORT:-8770}/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '${MCP_TEST_SERVER_CPU_LIMIT:-0.50}'
+          memory: ${MCP_TEST_SERVER_MEMORY_LIMIT:-256M}
+        reservations:
+          memory: ${MCP_TEST_SERVER_MEMORY_RESERVATION:-128M}
+    networks:
+      - external
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${MCP_NETWORK_EXTERNAL}
+      - traefik.http.routers.mcp-test-server.rule=Host(`${MCP_TEST_SERVER_PUBLIC_HOST:-mcp-test.local}`) && PathPrefix(`/mcp`)
+      - traefik.http.routers.mcp-test-server.entrypoints=websecure
+      - traefik.http.routers.mcp-test-server.tls=true
+      - traefik.http.services.mcp-test-server.loadbalancer.server.port=${MCP_TEST_SERVER_PORT:-8770}
+
+networks:
+  external:
+    name: ${MCP_NETWORK_EXTERNAL}
+    external: true

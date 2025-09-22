@@ -34,7 +34,7 @@ Provide a quick reference for operating the shared automation scripts that (a) a
    scripts/compose.sh up --build
    ```
    - Discovers every `services/*/compose.yml` plus the root `docker-compose.yml` and forwards arguments directly to `docker compose`.
-   - Add `-d` for detached runs; pass service names to limit scope (`scripts/compose.sh up --build openmemory`).
+   - Add `-d` for detached runs; pass service names to limit scope (`scripts/compose.sh up --build mcp-test-server`).
 4. **Tear down**
    ```bash
    scripts/compose.sh down --remove-orphans
@@ -42,7 +42,7 @@ Provide a quick reference for operating the shared automation scripts that (a) a
    - Removes only containers started by the aggregated stack. External networks defined in `.env` remain untouched.
 5. **Logs & inspection**
    ```bash
-   scripts/compose.sh logs -f openmemory
+   scripts/compose.sh logs -f mcp-test-server
    scripts/compose.sh ps
    ```
    - Use standard docker-compose flags; the wrapper simply composes the file list.
@@ -103,7 +103,7 @@ Provide a quick reference for operating the shared automation scripts that (a) a
    - Before coding, load `docs/architecture/tech-stack.md`, `docs/architecture/source-tree.md`, and `docs/architecture/coding-standards.md` (reinforced in `AGENTS.md`).
    - Reference this runbook when tasks involve local compose orchestration or documentation rendering.
 3. **Documentation Logging**
-   - Record substantive decisions via `openmemory.add_memories` with `project=chat-mcp-farm` tags (see `AGENTS.md` Turn Lifecycle).
+   - Record substantive decisions via `openmemory.add_memories` (legacy reference; continue to tag decisions with the test server context) with `project=chat-mcp-farm` tags (see `AGENTS.md` Turn Lifecycle).
    - Include links to generated artifacts (e.g., `docs/.generated/...`) instead of embedding raw content.
 
 ---

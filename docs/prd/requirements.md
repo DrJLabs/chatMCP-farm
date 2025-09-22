@@ -3,7 +3,7 @@
 ## Functional Requirements
 - FR1: Root npm commands execute lint/test/build across all workspaces.
 - FR2: `mcp-auth-kit` exposes manifest, PRM, auth guard, origin enforcement, and sensible defaults.
-- FR3: `openmemory` remains the reference service using Streamable HTTP with an optional SSE fallback, while leaving room for additional MCP services.
+- FR3: The MCP test server remains the reference service using Streamable HTTP with an optional SSE fallback, while leaving room for additional MCP services.
 - FR4: Bootstrap assets provision new MCP services with OAuth wiring in under 10 minutes.
 - FR5: Docs stay synchronized with automation (bootstrap checklist, OAuth guide, migration plan).
 - FR6: Keycloak automation scripts (`scripts/kc`) register scopes, trusted hosts, and status checks.

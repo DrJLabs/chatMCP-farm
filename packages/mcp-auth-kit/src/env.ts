@@ -87,17 +87,6 @@ export const AUTH_ENV_VARS: AuthEnvVariable[] = [
     description: 'Override manifest description for the model.',
     required: false,
   },
-  {
-    name: 'OPENMEMORY_BASE_URL',
-    description: 'Downstream API base URL consumed by the OpenMemory MCP.',
-    required: false,
-  },
-  {
-    name: 'OPENMEMORY_API_TOKEN',
-    description: 'API token for the OpenMemory backend (keep secret).',
-    required: false,
-    sensitive: true,
-  },
 ]
 
 export function summarizeAuthEnv(env: NodeJS.ProcessEnv = process.env): AuthEnvSummary[] {

@@ -58,13 +58,7 @@ Automation tip: `scripts/kc/create_mcp_scope.sh --resource <MCP_PUBLIC_BASE_URL>
 
 ### 2.4 Redirect URIs and origins
 
-- `{{OIDC_AUDIENCE}}` (pre-provisioned) must allow:
-  - `https://chatgpt.com/connector_platform_oauth_redirect`
-  - `https://chatgpt.com/oauth/callback`
-  - `https://chat.openai.com/oauth/callback`
-  - `https://chat.openai.com/aip/<id>/oauth/callback`
-- Keep web origins: `https://chatgpt.com`, `https://chat.openai.com`, plus our domains.
-- ChatGPT-created UUID clients default to `https://chatgpt.com/connector_platform_oauth_redirect`; no additional URIs required.
+ChatGPT-managed clients register redirect URIs automatically during Dynamic Client Registration. Ensure your Trusted Hosts policy (see §2.2) covers the ChatGPT domains and any of your own domains you expose; no manual URI list is required.
 
 ### 2.5 Token endpoint quirks
 

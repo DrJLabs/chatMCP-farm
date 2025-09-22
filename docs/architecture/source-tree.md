@@ -16,13 +16,13 @@
 │       │   └── index.ts     Express middleware + manifest/PRM helpers
 │       └── README.md        Package usage expectations
 ├── services/
-│   └── openmemory/      Reference MCP service wired to OpenMemory backend
+│   └── mcp-test-server/ \ Deterministic MCP test harness
 │       ├── src/
 │       │   ├── server.ts    Express bootstrapping + transport wiring
-│       │   ├── mcp.ts        Tool registration + OpenMemory client calls
-│       │   ├── smoke.ts      Streamable HTTP smoke tester
-│       │   └── smoke_sse.ts  Optional SSE smoke tester
-│       └── compose.yml       Service compose fragment consumed by scripts/compose.sh
+│       │   ├── mcp.ts        Diagnostics tooling for integration tests
+│       │   └── smoke.ts      Streamable HTTP smoke tester
+│       ├── compose.yml       Service compose fragment consumed by scripts/compose.sh
+│       └── README.md         Service-specific setup guidance
 ├── scripts/
 │   ├── bootstrap.sh     Copies templates/service into services/<name>
 │   ├── compose.sh       Aggregates services/*/compose.yml for docker-compose

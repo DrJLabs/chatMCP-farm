@@ -15,7 +15,7 @@
 
 ## Current Assets
 - `packages/mcp-auth-kit/`: TypeScript helpers providing Keycloak-aware middleware and metadata endpoints.
-- `services/openmemory/`: Reference server consuming the auth kit with docker-compose snippets.
+- `services/mcp-test-server/`: Reference diagnostics service consuming the auth kit with docker-compose snippets.
 - `scripts/compose.sh`: Discovers `services/*/compose.yml` fragments and runs docker-compose with merged stack.
 - `docs/oauth-keycloak.md`: End-to-end instructions for Keycloak + ChatGPT Developer Mode.
 - `docs/bootstrap-checklist.md`: Quickstart checklist mapping repo scripts to bootstrap tasks.
@@ -34,7 +34,7 @@ mcp-servers/
   packages/
     mcp-auth-kit/           # published/shared package
   services/
-    openmemory/             # reference implementation (renamed from openmemory-mcp-ts)
+    mcp-test-server/        # reference diagnostics implementation
   scripts/
     kc/                     # wrappers around Keycloak automation (docker / kc_* scripts)
     bootstrap.sh            # scaffolds a new MCP server using templates
@@ -84,7 +84,7 @@ mcp-servers/
   - [x] Add companion scripts (`kc/status.sh`, `kc/trusted_hosts.sh`).
 - [ ] Wire root npm scripts: add `lint`, `test`, and `build` orchestration invoking workspace targets; decide on pnpm/Nx adoption if build times remain high.
   - [ ] `packages/mcp-auth-kit`: expose `lint` via `tsc --noEmit` and land a smoke-style `test` runner (Node test harness is acceptable) so the root target exercises the package.
-  - [ ] `services/openmemory`: add type-check `lint`, ensure `test` covers `npm run smoke` until formal suites exist, and propagate the same commands into `templates/service`.
+  - [ ] `services/mcp-test-server`: add type-check `lint`, ensure `test` covers `npm run smoke` until formal suites exist, and propagate the same commands into `templates/service`.
   - [ ] Document the workspace commands and expectations in `mcp-servers/README.md` to keep new services aligned.
 - [ ] Integrate Changesets (or similar) for versioning/publishing prior to repo split.
 - [ ] Update `docker-compose.yml` and CI workflows to consume the new workspace paths and placeholders.

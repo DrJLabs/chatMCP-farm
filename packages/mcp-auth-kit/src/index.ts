@@ -41,8 +41,8 @@ interface ResolvedAuthKitOptions extends AuthKitOptions {
 }
 
 const DEFAULT_ALLOWED_ORIGINS = ['https://chatgpt.com', 'https://chat.openai.com']
-const DEFAULT_MODEL_NAME = 'openmemory_mcp'
-const DEFAULT_HUMAN_NAME = 'OpenMemory MCP'
+const DEFAULT_MODEL_NAME = 'mcp_service'
+const DEFAULT_HUMAN_NAME = 'MCP Service'
 const DEFAULT_DESCRIPTION_HUMAN = 'OAuth-protected Model Context Protocol server.'
 const DEFAULT_DESCRIPTION_MODEL = 'Provides MCP tools protected by OAuth 2.1.'
 

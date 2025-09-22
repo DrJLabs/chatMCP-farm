@@ -1,0 +1,83 @@
+# <!-- Powered by BMAD™ Core -->
+workflow:
+  id: focused-epic
+  name: Focused Epic Development
+  description: >-
+    For creating and executing a single, well-defined epic without the upfront PRD and architecture phases.
+    Ideal for adding self-contained features to existing projects or for small, single-purpose new projects.
+  type: hybrid
+  project_types:
+    - feature-addition
+    - small-project-mvp
+    - prototype
+
+  sequence:
+    - agent: pm
+      action: create-brownfield-epic
+      creates: epic.md
+      notes: |
+        PM agent collaborates with the user to define a single, self-contained epic.
+        Capture goals, user stories, dependencies, and integration requirements in `epic.md`.
+
+    - agent: sm
+      action: create_story
+      requires: epic.md
+      creates: story.md
+      repeats: for_each_story_in_epic
+      notes: |
+        Scrum Master drafts the initial `story.md` from the epic definition.
+        Stories live in `docs/stories/` and must include acceptance criteria before hand-off.
+
+    - agent: researcher
+      action: validate-plan
+      requires: story.md
+      notes: |
+        Researcher validates and modernizes the story draft with current best practices.
+        Apply updates directly and append to the "Research & Validation Log" inside the story.
+
+    - agent: qa
+      action: risk-profile
+      requires: story.md
+      creates: risk-profile.md
+      notes: |
+        QA generates the risk profile for the updated story.
+        Save beside the story to keep the validation bundle together.
+
+    - agent: qa
+      action: test-design
+      requires: story.md
+      creates: test-design.md
+      notes: |
+        QA creates the formal test design based on the story's requirements.
+        Link back to the originating story and acceptance criteria.
+
+    - agent: researcher
+      action: validate-plan
+      requires: test-design.md
+      notes: |
+        Researcher validates the test design using modern testing strategies and tooling standards.
+        Update the document and append findings to its "Research & Validation Log".
+
+    - agent: po
+      action: validate-story-draft
+      requires: story.md
+      notes: |
+        Product Owner performs the final validation of the fully enriched story before development.
+        Confirm that research and QA artifacts are attached and ready.
+
+    - agent: dev
+      action: implement_story
+      requires: story.md
+      creates: implementation_files
+      notes: |
+        Dev agent implements the validated story following the attached guidance and QA collateral.
+
+    - step: development_cycle_repeat
+      action: continue_for_all_stories_in_epic
+      notes: |
+        Repeat the SM → Researcher → QA → PO → Dev cycle for each remaining story in the epic.
+
+    - step: workflow_end
+      action: epic_complete
+      notes: |
+        All stories for the epic have been implemented and reviewed. The feature is complete.
