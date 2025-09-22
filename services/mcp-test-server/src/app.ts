@@ -211,10 +211,13 @@ function buildEndpointsList(authKit: AuthKitContext) {
 }
 
 function redactHeaders(headers: Request['headers']) {
-  const clone: Record<string, unknown> = { ...headers }
-  const authKey = Object.keys(clone).find(key => key.toLowerCase() === 'authorization')
-  if (authKey) {
-    clone[authKey] = 'Bearer <redacted>'
+  const clone: Record<string, unknown> = { ...headers };
+  const headersToRedact = ['authorization', 'cookie', 'proxy-authorization'];
+
+  for (const header of Object.keys(clone)) {
+    if (headersToRedact.includes(header.toLowerCase())) {
+      clone[header] = '<redacted>';
+    }
   }
-  return clone
+  return clone;
 }
