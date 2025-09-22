@@ -37,7 +37,14 @@ async function main() {
     }
 
     const data = await res.json()
+    const sessionId = res.headers.get('mcp-session-id') ?? 'missing'
     console.log('initialize response:', JSON.stringify(data, null, 2))
+    console.log('accept header sent:', headers.accept)
+    console.log('mcp-session-id header:', sessionId)
+    const protocolHeader = res.headers.get('mcp-protocol-version')
+    if (protocolHeader) {
+      console.log('mcp-protocol-version header:', protocolHeader)
+    }
   } finally {
     clearTimeout(timeout)
   }

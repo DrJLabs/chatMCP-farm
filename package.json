@@ -9,7 +9,8 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
+    "guard": "./scripts/run-guardrails.sh",
+    "test": "npm run guard && npm run test --workspaces --if-present",
     "docs:render": "node scripts/render-docs.mjs",
     "bmad:refresh": "bmad-method install -f -i codex",
     "bmad:list": "bmad-method list:agents",

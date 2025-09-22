@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage: scripts/healthcheck.sh --base-url <https://host/mcp> --issuer <https://keycloak/.../realms/REALM> \
-        --client-id <id> [--client-secret <secret>] [--resource-url <url>] [--manifest-url <url>] \
+        --client-id <id> [--resource-url <url>] [--manifest-url <url>] \
         [--prm-url <url>] [--schema <version>] [--sse] [--help]
 
 Environment variable fallbacks:
@@ -46,7 +46,7 @@ if [[ -z "${BASE_URL}" && -n "${MCP_PUBLIC_BASE_URL:-}" ]]; then
 fi
 ISSUER=${KC_ISSUER:-}
 CLIENT_ID=${CLIENT_ID:-}
-CLIENT_SECRET=${CLIENT_SECRET:-}
+CLIENT_SECRET=${CLIENT_SECRET:-${KC_CLIENT_SECRET:-}}
 RESOURCE_EXPLICIT=false
 if [[ -n "${MCP_RESOURCE_URL:-}" ]]; then
   RESOURCE_URL=${MCP_RESOURCE_URL}
@@ -64,14 +64,12 @@ MANIFEST_URL=${MCP_MANIFEST_URL:-}
 PRM_URL=${MCP_PRM_URL:-}
 SCHEMA_VERSION=${MCP_SCHEMA:-2025-06-18}
 CHECK_SSE=false
-SECRET_FROM_FLAG=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --base-url) BASE_URL=$2; shift 2 ;;
     --issuer) ISSUER=$2; shift 2 ;;
     --client-id) CLIENT_ID=$2; shift 2 ;;
-    --client-secret) CLIENT_SECRET=$2; SECRET_FROM_FLAG=true; shift 2 ;;
     --resource-url) RESOURCE_URL=$2; RESOURCE_EXPLICIT=true; shift 2 ;;
     --manifest-url) MANIFEST_URL=$2; shift 2 ;;
     --prm-url) PRM_URL=$2; shift 2 ;;
@@ -85,10 +83,7 @@ done
 [[ -z "$BASE_URL" ]] && fail "--base-url (or MCP_TRANSPORT_URL/MCP_BASE_URL/MCP_PUBLIC_BASE_URL) is required"
 [[ -z "$ISSUER" ]] && fail "--issuer (or KC_ISSUER) is required"
 [[ -z "$CLIENT_ID" ]] && fail "--client-id (or CLIENT_ID env) is required"
-[[ -z "$CLIENT_SECRET" ]] && fail "--client-secret (or CLIENT_SECRET env) is required"
-if [[ "$SECRET_FROM_FLAG" == true ]]; then
-  log "WARNING: --client-secret on CLI is unsafe (visible in process list). Prefer CLIENT_SECRET env."
-fi
+[[ -z "$CLIENT_SECRET" ]] && fail "CLIENT_SECRET not provided. Source .keycloak-env (exports KC_CLIENT_SECRET) before running this script."
 
 # Normalise URLs (strip trailing slashes)
 trim_trailing_slash() {
@@ -176,6 +171,11 @@ jq -e '.result' "$TMPDIR/initialize.json" >/dev/null 2>&1 || fail "Initialize re
 if ! grep -qi 'Mcp-Session-Id' "$TMPDIR/initialize.headers"; then
   fail "Initialize response missing Mcp-Session-Id header"
 fi
+
+session_header=$(grep -i '^Mcp-Session-Id:' "$TMPDIR/initialize.headers" | head -n1 | cut -d':' -f2- | xargs)
+log "Mcp-Session-Id header: ${session_header:-missing}"
+log "Accept header sent: application/json, text/event-stream"
+log "MCP protocol version: $SCHEMA_VERSION"
 
 if $CHECK_SSE; then
   log "HEAD probe for SSE at ${SSE_URL}"

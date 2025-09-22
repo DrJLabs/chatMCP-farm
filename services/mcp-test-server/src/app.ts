@@ -24,6 +24,8 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   const app = express()
   app.set('trust proxy', true)
 
+  const MCP_PROTOCOL_VERSION = '2025-06-18'
+
   const transports = new Map<string, StreamableHTTPServerTransport>()
 
   morgan.token('authFlag', req => (req.headers.authorization ? 'present' : 'absent'))
@@ -104,7 +106,9 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     if (!ensureAcceptHeader(req, res)) return
     try {
       const sid = req.headers['mcp-session-id'] as string | undefined
-      const transport = (sid && transports.get(sid)) ?? (await createTransport())
+      const existingTransport = sid ? transports.get(sid) : undefined
+      const transport = existingTransport ?? (await createTransport())
+      res.setHeader('Mcp-Protocol-Version', MCP_PROTOCOL_VERSION)
       await transport.handleRequest(req as any, res as any, (req as any).body)
     } catch (err) {
       console.error('Streamable POST error', err)
@@ -125,6 +129,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       return
     }
     try {
+      res.setHeader('Mcp-Protocol-Version', MCP_PROTOCOL_VERSION)
       await transport.handleRequest(req as any, res as any)
     } catch (err) {
       console.error('Streamable GET error', err)
@@ -145,6 +150,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       return
     }
     try {
+      res.setHeader('Mcp-Protocol-Version', MCP_PROTOCOL_VERSION)
       await transport.handleRequest(req as any, res as any)
     } catch (err) {
       console.error('Streamable DELETE error', err)

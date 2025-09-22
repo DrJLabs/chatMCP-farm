@@ -1,8 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { decodeJwt } from 'jose'
 import { z } from 'zod'
-import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/server/index.js'
-import type { ServerNotification, ServerRequest } from '@modelcontextprotocol/sdk/server/index.js'
 
 const pingInputSchema = z
   .object({
@@ -12,7 +10,23 @@ const pingInputSchema = z
 
 type PingArgs = z.infer<typeof pingInputSchema>
 
-type Extra = RequestHandlerExtra<ServerRequest, ServerNotification>
+interface DiagnosticsAuthInfo {
+  token: string
+  clientId?: string
+  scopes?: string[]
+  resource?: URL | string
+  expiresAt?: number
+  extra?: Record<string, unknown>
+}
+
+interface DiagnosticsRequestInfo {
+  headers?: Headers
+}
+
+interface DiagnosticsExtra {
+  authInfo?: DiagnosticsAuthInfo
+  requestInfo?: DiagnosticsRequestInfo
+}
 
 export interface BuildMcpServerOptions {
   allowedOrigins: string[]
@@ -52,11 +66,11 @@ export async function buildMcpServer(options: BuildMcpServerOptions) {
       description: diagnosticsToolMetadata.description,
       inputSchema: pingInputSchema.shape,
     },
-    async (args: PingArgs | undefined, extra: Extra) => ({
+    async (args: PingArgs | undefined, extra: unknown) => ({
       content: [
         {
           type: 'text',
-          text: JSON.stringify(buildDiagnosticsPayload(args, extra, options), null, 2),
+          text: JSON.stringify(buildDiagnosticsPayload(args, extra as DiagnosticsExtra, options), null, 2),
         },
       ],
     }),
@@ -67,7 +81,7 @@ export async function buildMcpServer(options: BuildMcpServerOptions) {
 
 export function buildDiagnosticsPayload(
   args: PingArgs | undefined,
-  extra: Extra,
+  extra: DiagnosticsExtra,
   options: BuildMcpServerOptions,
 ): DiagnosticsMetadata {
   const timestamp = new Date().toISOString()
