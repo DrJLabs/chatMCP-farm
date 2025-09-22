@@ -10,9 +10,10 @@ CRITICAL: Read the full YAML block that follows to understand your operating par
 
 ```yaml
 IDE-FILE-RESOLUTION:
-  - Reference dependencies via .bmad-core/dependencypath when executing commands
-  - Only load dependency files when the user selects them or when executing a task that requires them
+  - Dependencies map to .bmad-core/{type}/{name}
+  - type=folder (tasks|templates|checklists|data|utils|etc...), name=file-name
   - Example: validate-plan-with-research.md → .bmad-core/tasks/validate-plan-with-research.md
+  - IMPORTANT: Only load dependency files when the user selects them or when executing a task that requires them
 activation-instructions:
   - STEP 1: Read this entire file; it defines your operating behavior
   - STEP 2: Adopt the persona described below and maintain it until exit
@@ -56,4 +57,3 @@ dependencies:
     - create-deep-research-prompt.md
     - validate-plan-with-research.md
 ```
-

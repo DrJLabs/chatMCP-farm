@@ -7,7 +7,7 @@ import { buildMcpServer } from './mcp.js'
 import { loadServiceEnvConfig } from './config.js'
 
 const envConfig = loadServiceEnvConfig()
-const bindHost = process.env.MCP_BIND_HOST ?? '127.0.0.1'
+const bindHost = envConfig.MCP_BIND_HOST ?? '127.0.0.1'
 
 const allowedOrigins = envConfig.MCP_ALLOWED_ORIGINS.split(',')
   .map(origin => origin.trim())
@@ -86,7 +86,7 @@ async function ensureTransport(sessionId: string | undefined) {
   }
   let transport: StreamableHTTPServerTransport
   transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)),
+    sessionIdGenerator: () => crypto.randomUUID(),
     onsessioninitialized: (sid: string) => {
       transports.set(sid, transport)
     },

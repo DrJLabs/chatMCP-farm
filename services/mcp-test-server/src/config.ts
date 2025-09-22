@@ -36,21 +36,5 @@ export function loadServiceEnvConfig(env: NodeJS.ProcessEnv = process.env): Serv
     source.MCP_PUBLIC_BASE_URL = source.MCP_TEST_SERVER_PUBLIC_BASE_URL
   }
 
-  const parsed = EnvSchema.parse(source)
-
-  process.env.PORT = String(parsed.PORT)
-  process.env.MCP_BIND_HOST = parsed.MCP_BIND_HOST
-  process.env.MCP_PUBLIC_BASE_URL = parsed.MCP_PUBLIC_BASE_URL
-  process.env.MCP_TEST_SERVER_PUBLIC_BASE_URL = parsed.MCP_PUBLIC_BASE_URL
-  process.env.PRM_RESOURCE_URL = parsed.PRM_RESOURCE_URL ?? parsed.MCP_PUBLIC_BASE_URL
-  process.env.REQUIRE_AUTH = parsed.REQUIRE_AUTH ? 'true' : 'false'
-  process.env.ENABLE_STREAMABLE = parsed.ENABLE_STREAMABLE ? 'true' : 'false'
-  process.env.ENABLE_SSE = parsed.ENABLE_SSE ? 'true' : 'false'
-  process.env.DEBUG_HEADERS = parsed.DEBUG_HEADERS ? 'true' : 'false'
-  process.env.MCP_ALLOWED_ORIGINS = parsed.MCP_ALLOWED_ORIGINS
-  process.env.ALLOWED_ORIGINS = parsed.MCP_ALLOWED_ORIGINS
-  process.env.OIDC_ISSUER = parsed.OIDC_ISSUER
-  process.env.OIDC_AUDIENCE = parsed.OIDC_AUDIENCE
-
-  return parsed
+  return EnvSchema.parse(source)
 }
