@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import express, { type Request, type Response } from 'express'
+import express, { type NextFunction, type Request, type Response } from 'express'
 import morgan from 'morgan'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { createAuthKit, loadAuthKitOptionsFromEnv, type AuthKitContext } from 'mcp-auth-kit'
@@ -80,6 +80,12 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     return true
   }
 
+  function mcpHeadersMiddleware(req: Request, res: Response, next: NextFunction) {
+    if (!ensureAcceptHeader(req, res)) return
+    res.setHeader('Mcp-Protocol-Version', MCP_PROTOCOL_VERSION)
+    next()
+  }
+
   async function createTransport() {
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => crypto.randomUUID(),
@@ -102,13 +108,11 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     res.status(204).end()
   })
 
-  app.post('/mcp', authGuard, async (req: Request, res: Response) => {
-    if (!ensureAcceptHeader(req, res)) return
+  app.post('/mcp', authGuard, mcpHeadersMiddleware, async (req: Request, res: Response) => {
     try {
       const sid = req.headers['mcp-session-id'] as string | undefined
       const existingTransport = sid ? transports.get(sid) : undefined
       const transport = existingTransport ?? (await createTransport())
-      res.setHeader('Mcp-Protocol-Version', MCP_PROTOCOL_VERSION)
       await transport.handleRequest(req as any, res as any, (req as any).body)
     } catch (err) {
       console.error('Streamable POST error', err)
@@ -116,8 +120,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     }
   })
 
-  app.get('/mcp', authGuard, async (req: Request, res: Response) => {
-    if (!ensureAcceptHeader(req, res)) return
+  app.get('/mcp', authGuard, mcpHeadersMiddleware, async (req: Request, res: Response) => {
     const sid = req.headers['mcp-session-id'] as string | undefined
     if (!sid) {
       res.status(400).json({ error: 'missing_session' })
@@ -129,7 +132,6 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       return
     }
     try {
-      res.setHeader('Mcp-Protocol-Version', MCP_PROTOCOL_VERSION)
       await transport.handleRequest(req as any, res as any)
     } catch (err) {
       console.error('Streamable GET error', err)
@@ -137,8 +139,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     }
   })
 
-  app.delete('/mcp', authGuard, async (req: Request, res: Response) => {
-    if (!ensureAcceptHeader(req, res)) return
+  app.delete('/mcp', authGuard, mcpHeadersMiddleware, async (req: Request, res: Response) => {
     const sid = req.headers['mcp-session-id'] as string | undefined
     if (!sid) {
       res.status(400).json({ error: 'missing_session' })
@@ -150,7 +151,6 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       return
     }
     try {
-      res.setHeader('Mcp-Protocol-Version', MCP_PROTOCOL_VERSION)
       await transport.handleRequest(req as any, res as any)
     } catch (err) {
       console.error('Streamable DELETE error', err)

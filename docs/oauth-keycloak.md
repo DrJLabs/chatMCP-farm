@@ -168,9 +168,12 @@ Redirect URIs for ChatGPT-managed clients are registered automatically during Dy
         -H 'Content-Type: application/json' \
         -X POST <MCP_TRANSPORT_URL> \
         -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0.1"}}}'
-   grep -i 'Mcp-Session-Id' headers.txt
-   grep -i 'Mcp-Protocol-Version' headers.txt || echo 'header missing'
-   ```
+  grep -i 'Mcp-Session-Id' headers.txt
+  if ! grep -iq 'Mcp-Protocol-Version' headers.txt; then
+    echo 'Mcp-Protocol-Version header missing' >&2
+    exit 1
+  fi
+  ```
 6. **Automated smoke (preferred)**
    ```bash
    CLIENT_ID="$KC_CLIENT_ID" CLIENT_SECRET="$KC_CLIENT_SECRET" \

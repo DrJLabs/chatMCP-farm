@@ -2,6 +2,10 @@
   "name": "mcp-servers-workspace",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22 <25",
+    "npm": ">=10"
+  },
   "workspaces": [
     "packages/*",
     "services/*"
@@ -9,8 +13,9 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
-    "guard": "./scripts/run-guardrails.sh",
-    "test": "npm run guard && npm run test --workspaces --if-present",
+    "guard": "bash scripts/run-guardrails.sh",
+    "pretest": "npm run guard",
+    "test": "npm run test --workspaces --if-present",
     "docs:render": "node scripts/render-docs.mjs",
     "bmad:refresh": "bmad-method install -f -i codex",
     "bmad:list": "bmad-method list:agents",

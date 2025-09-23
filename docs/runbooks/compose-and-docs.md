@@ -51,7 +51,7 @@ Provide a quick reference for operating the shared automation scripts that (a) a
      Validate that `services/mcp-test-server/.env` (or the env you supply) exports `MCP_NETWORK_EXTERNAL` so Compose can attach successfully.
 4. **Tear down**
    ```bash
-   scripts/compose.sh down --remove-orphans
+   scripts/compose.sh --profile mcp-test-server down --remove-orphans
    ```
    - Removes only containers started by the aggregated stack. External networks defined in `.env` remain untouched.
 5. **Logs & inspection**
