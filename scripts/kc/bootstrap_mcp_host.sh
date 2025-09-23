@@ -37,6 +37,18 @@ ATTACH_CLIENTS=()
 TRUSTED_ALIAS="${DEFAULT_TRUSTED_ALIAS}"
 RUN_VERIFY=false
 
+add_unique_clients_to_cmd() {
+  local -n cmd_array=$1
+  declare -A seen=()
+  for cid in "${ATTACH_CLIENTS[@]}"; do
+    [[ -z "${cid}" ]] && continue
+    if [[ -z "${seen[${cid}]:-}" ]]; then
+      cmd_array+=("--client" "${cid}")
+      seen["${cid}"]=1
+    fi
+  done
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --resource)
@@ -119,14 +131,7 @@ fi
 CMD=("${CREATE_SCOPE_SCRIPT}" "--resource" "${RESOURCE_CLEAN}" "--scope-name" "${SCOPE_NAME}" "--mapper-name" "${MAPPER_NAME}" "--trusted-policy-alias" "${TRUSTED_ALIAS}")
 
 if [[ ${#ATTACH_CLIENTS[@]} -gt 0 ]]; then
-  declare -A seen=()
-  for cid in "${ATTACH_CLIENTS[@]}"; do
-    [[ -z "${cid}" ]] && continue
-    if [[ -z "${seen[${cid}]:-}" ]]; then
-      CMD+=("--client" "${cid}")
-      seen["${cid}"]=1
-    fi
-  done
+  add_unique_clients_to_cmd CMD
 fi
 
 echo "[bootstrap] ensuring scope '${SCOPE_NAME}' for resource '${RESOURCE_CLEAN}' (mapper '${MAPPER_NAME}')"
@@ -137,14 +142,7 @@ echo "[bootstrap] scope + trusted host completed"
 if [[ ${RUN_VERIFY} == true ]]; then
   STATUS_CMD=("${STATUS_SCRIPT}" "--resource" "${RESOURCE_CLEAN}" "--scope-name" "${SCOPE_NAME}" "--mapper-name" "${MAPPER_NAME}" "--trusted-policy-alias" "${TRUSTED_ALIAS}")
   if [[ ${#ATTACH_CLIENTS[@]} -gt 0 ]]; then
-    declare -A seen_status=()
-    for cid in "${ATTACH_CLIENTS[@]}"; do
-      [[ -z "${cid}" ]] && continue
-      if [[ -z "${seen_status[${cid}]:-}" ]]; then
-        STATUS_CMD+=("--client" "${cid}")
-        seen_status["${cid}"]=1
-      fi
-    done
+    add_unique_clients_to_cmd STATUS_CMD
   fi
   echo "[bootstrap] running verification"
   "${STATUS_CMD[@]}"
