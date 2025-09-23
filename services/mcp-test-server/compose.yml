@@ -4,7 +4,7 @@ services:
     profiles:
       - mcp-test-server
     build:
-      context: ${MCP_BUILD_CONTEXT:-.}
+      context: ${MCP_BUILD_CONTEXT:-..}
       dockerfile: ${MCP_DOCKERFILE:-services/mcp-test-server/Dockerfile}
     env_file:
       - ./services/mcp-test-server/.env

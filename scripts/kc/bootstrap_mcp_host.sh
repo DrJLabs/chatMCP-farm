@@ -37,24 +37,27 @@ ATTACH_CLIENTS=()
 TRUSTED_ALIAS="${DEFAULT_TRUSTED_ALIAS}"
 RUN_VERIFY=false
 
+dedupe_client_ids() {
+  python3 - "$@" <<'PY'
+import sys
+seen = set()
+for value in sys.argv[1:]:
+    if value and value not in seen:
+        seen.add(value)
+        print(value)
+PY
+}
+
 add_unique_clients_to_cmd() {
   local -n cmd_array=$1
-  local -a uniq_clients=()
-  local cid existing duplicate
-  for cid in "${ATTACH_CLIENTS[@]}"; do
+  shift
+  if [[ $# -eq 0 ]]; then
+    return
+  fi
+  while IFS= read -r cid; do
     [[ -z "${cid}" ]] && continue
-    duplicate=false
-    for existing in "${uniq_clients[@]}"; do
-      if [[ "${existing}" == "${cid}" ]]; then
-        duplicate=true
-        break
-      fi
-    done
-    if [[ ${duplicate} == false ]]; then
-      uniq_clients+=("${cid}")
-      cmd_array+=("--client" "${cid}")
-    fi
-  done
+    cmd_array+=("--client" "${cid}")
+  done < <(dedupe_client_ids "$@")
 }
 
 while [[ $# -gt 0 ]]; do
@@ -144,7 +147,7 @@ fi
 CMD=("${CREATE_SCOPE_SCRIPT}" "--resource" "${RESOURCE_CLEAN}" "--scope-name" "${SCOPE_NAME}" "--mapper-name" "${MAPPER_NAME}" "--trusted-policy-alias" "${TRUSTED_ALIAS}")
 
 if [[ ${#ATTACH_CLIENTS[@]} -gt 0 ]]; then
-  add_unique_clients_to_cmd CMD
+  add_unique_clients_to_cmd CMD "${ATTACH_CLIENTS[@]}"
 fi
 
 echo "[bootstrap] ensuring scope '${SCOPE_NAME}' for resource '${RESOURCE_CLEAN}' (mapper '${MAPPER_NAME}')"
@@ -155,7 +158,7 @@ echo "[bootstrap] scope + trusted host completed"
 if [[ ${RUN_VERIFY} == true ]]; then
   STATUS_CMD=("${STATUS_SCRIPT}" "--resource" "${RESOURCE_CLEAN}" "--scope-name" "${SCOPE_NAME}" "--mapper-name" "${MAPPER_NAME}" "--trusted-policy-alias" "${TRUSTED_ALIAS}")
   if [[ ${#ATTACH_CLIENTS[@]} -gt 0 ]]; then
-    add_unique_clients_to_cmd STATUS_CMD
+    add_unique_clients_to_cmd STATUS_CMD "${ATTACH_CLIENTS[@]}"
   fi
   echo "[bootstrap] running verification"
   "${STATUS_CMD[@]}"

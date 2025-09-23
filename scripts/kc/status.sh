@@ -32,6 +32,17 @@ TRUSTED_POLICY_ALIAS="Trusted Hosts"
 RESOURCE=""
 CLIENTS=()
 
+dedupe_client_ids() {
+  python3 - "$@" <<'PY'
+import sys
+seen = set()
+for value in sys.argv[1:]:
+    if value and value not in seen:
+        seen.add(value)
+        print(value)
+PY
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --realm)
@@ -91,21 +102,12 @@ else
 fi
 
 if [[ ${#CLIENTS[@]} -gt 0 ]]; then
-  uniq_clients=()
-  for cid in "${CLIENTS[@]}"; do
+  deduped_clients=()
+  while IFS= read -r cid; do
     [[ -z "${cid}" ]] && continue
-    duplicate=false
-    for existing in "${uniq_clients[@]}"; do
-      if [[ "${existing}" == "${cid}" ]]; then
-        duplicate=true
-        break
-      fi
-    done
-    if [[ ${duplicate} == false ]]; then
-      uniq_clients+=("${cid}")
-    fi
-  done
-  CLIENTS=("${uniq_clients[@]}")
+    deduped_clients+=("${cid}")
+  done < <(dedupe_client_ids "${CLIENTS[@]}")
+  CLIENTS=("${deduped_clients[@]}")
 fi
 
 if [[ ${#CLIENTS[@]} -gt 0 ]]; then
