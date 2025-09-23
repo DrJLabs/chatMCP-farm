@@ -115,5 +115,17 @@ find_client_uuid() {
 
 get_trusted_hosts_component() {
   local realm=$1
-  kc_api_json GET "${realm}/components?providerType=org.keycloak.policy.ClientRegistrationPolicy" | jq -r 'map(select(.providerId == "trusted-hosts")) | .[0] // empty'
+  local alias=${2:-}
+
+  if [[ -n "${alias}" ]]; then
+    kc_api_json GET "${realm}/components?providerType=org.keycloak.policy.ClientRegistrationPolicy" \
+      | jq -r --arg alias "${alias}" '
+        map(select(.providerId == "trusted-hosts"))
+        | map(select((.name // "") | ascii_downcase == ($alias | ascii_downcase)))
+        | .[0] // empty
+      '
+  else
+    kc_api_json GET "${realm}/components?providerType=org.keycloak.policy.ClientRegistrationPolicy" \
+      | jq -r 'map(select(.providerId == "trusted-hosts")) | .[0] // empty'
+  fi
 }

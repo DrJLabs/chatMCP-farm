@@ -151,9 +151,9 @@ print(url.hostname)
 ' "${RESOURCE}")
 
 echo "== Ensuring Trusted Hosts includes '${RESOURCE_HOST}'"
-TRUSTED_COMPONENT=$(get_trusted_hosts_component "${REALM}")
+TRUSTED_COMPONENT=$(get_trusted_hosts_component "${REALM}" "${TRUSTED_POLICY_ALIAS}")
 if [[ -z "${TRUSTED_COMPONENT}" ]]; then
-  echo "  warning: trusted hosts policy not found in realm '${REALM}'" >&2
+  echo "  warning: trusted hosts policy '${TRUSTED_POLICY_ALIAS}' not found in realm '${REALM}'" >&2
 else
   COMPONENT_ID=$(printf '%s' "${TRUSTED_COMPONENT}" | jq -r '.id')
   COMPONENT_NAME=$(printf '%s' "${TRUSTED_COMPONENT}" | jq -r '.name')

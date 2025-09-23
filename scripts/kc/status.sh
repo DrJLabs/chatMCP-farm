@@ -121,9 +121,9 @@ if [[ ${#CLIENTS[@]} -gt 0 ]]; then
 fi
 
 echo "\n== Trusted Hosts policy =="
-TRUSTED_COMPONENT=$(get_trusted_hosts_component "${REALM}")
+TRUSTED_COMPONENT=$(get_trusted_hosts_component "${REALM}" "${TRUSTED_POLICY_ALIAS}")
 if [[ -z "${TRUSTED_COMPONENT}" ]]; then
-  echo "trusted hosts policy not found"
+  echo "trusted hosts policy '${TRUSTED_POLICY_ALIAS}' not found"
 else
   COMPONENT_NAME=$(printf '%s' "${TRUSTED_COMPONENT}" | jq -r '.name')
   echo "policy: ${COMPONENT_NAME}"
