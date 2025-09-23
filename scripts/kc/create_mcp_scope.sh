@@ -98,9 +98,19 @@ if [[ -z "${MAPPER_ID}" ]]; then
   kc_api_no_content POST "${REALM}/client-scopes/${SCOPE_ID}/protocol-mappers/models" "${MAPPER_PAYLOAD}"
   echo "  mapper created"
 else
-  kc_api_no_content DELETE "${REALM}/client-scopes/${SCOPE_ID}/protocol-mappers/models/${MAPPER_ID}"
-  kc_api_no_content POST "${REALM}/client-scopes/${SCOPE_ID}/protocol-mappers/models" "${MAPPER_PAYLOAD}"
-  echo "  mapper replaced"
+  EXISTING=$(kc_api_json GET "${REALM}/client-scopes/${SCOPE_ID}/protocol-mappers/models/${MAPPER_ID}")
+  if jq -e --argjson new "${MAPPER_PAYLOAD}" '
+      (.name == $new.name)
+      and (.protocol == $new.protocol)
+      and (.protocolMapper == $new.protocolMapper)
+      and (.config == $new.config)
+    ' <<<"${EXISTING}" >/dev/null; then
+    echo "  mapper already up-to-date"
+  else
+    MAPPER_PUT_PAYLOAD=$(jq --arg id "${MAPPER_ID}" '. + {id: $id}' <<<"${MAPPER_PAYLOAD}")
+    kc_api_no_content PUT "${REALM}/client-scopes/${SCOPE_ID}/protocol-mappers/models/${MAPPER_ID}" "${MAPPER_PUT_PAYLOAD}"
+    echo "  mapper updated"
+  fi
 fi
 
 echo "== Ensuring scope is a realm default"

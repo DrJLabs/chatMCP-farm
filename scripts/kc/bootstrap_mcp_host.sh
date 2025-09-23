@@ -159,11 +159,7 @@ if [[ -z "${SCOPE_NAME}" ]]; then
 fi
 
 if [[ -z "${MAPPER_NAME}" ]]; then
-  if [[ "${SCOPE_NAME}" == "${BASE_FULL}-resource" ]]; then
-    MAPPER_NAME="${BASE_FULL}-audience"
-  else
-    MAPPER_NAME="${SCOPE_NAME%-resource}-audience"
-  fi
+  MAPPER_NAME="${SCOPE_NAME%-resource}-audience"
 fi
 
 CMD=("${CREATE_SCOPE_SCRIPT}" "--resource" "${RESOURCE_CLEAN}" "--scope-name" "${SCOPE_NAME}" "--mapper-name" "${MAPPER_NAME}" "--trusted-policy-alias" "${TRUSTED_ALIAS}")

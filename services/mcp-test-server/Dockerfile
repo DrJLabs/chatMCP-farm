@@ -5,9 +5,9 @@ WORKDIR /workspace
 COPY package.json package-lock.json tsconfig.base.json ./
 COPY services/mcp-test-server/package.json services/mcp-test-server/
 COPY packages/mcp-auth-kit/package.json packages/mcp-auth-kit/
+RUN npm ci --ignore-scripts --workspace packages/mcp-auth-kit --workspace services/mcp-test-server
 COPY packages/mcp-auth-kit/tsconfig.json packages/mcp-auth-kit/
 COPY packages/mcp-auth-kit/src packages/mcp-auth-kit/src
-RUN npm ci --workspace packages/mcp-auth-kit --workspace services/mcp-test-server
 RUN npm run build --workspace packages/mcp-auth-kit
 
 FROM node:24-alpine AS builder
