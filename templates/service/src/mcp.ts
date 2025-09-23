@@ -53,7 +53,7 @@ const diagnosticsExtraSchema = z
     authInfo: diagnosticsAuthInfoSchema.optional(),
     requestInfo: diagnosticsRequestInfoSchema.optional(),
   })
-  .strict()
+  .passthrough()
 
 type DiagnosticsAuthInfo = z.infer<typeof diagnosticsAuthInfoSchema>
 type DiagnosticsRequestInfo = z.infer<typeof diagnosticsRequestInfoSchema>
