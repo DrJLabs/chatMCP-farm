@@ -34,4 +34,31 @@ describe('Accept header enforcement', () => {
     expect(response.status).toBe(406)
     expect(response.body).toMatchObject({ error: 'not_acceptable' })
   })
+
+  it('honours Accept header and returns protocol + session metadata', async () => {
+    const env = {
+      ...BASE_ENV,
+      MCP_TEST_SERVER_REQUIRE_AUTH: 'false',
+    }
+    const { app } = await createApp({ env })
+
+    const response = await request(app)
+      .post('/mcp')
+      .set('Content-Type', 'application/json')
+      .set('Accept', 'application/json, text/event-stream')
+      .send({
+        jsonrpc: '2.0',
+        id: 'smoke',
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-06-18',
+          capabilities: {},
+          clientInfo: { name: 'test', version: '0.0.1' },
+        },
+      })
+
+    expect(response.status).toBe(200)
+    expect(response.headers['mcp-session-id']).toBeTruthy()
+    expect(response.headers['mcp-protocol-version']).toBe('2025-06-18')
+  })
 })

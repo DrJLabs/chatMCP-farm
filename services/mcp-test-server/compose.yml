@@ -1,5 +1,6 @@
 services:
   mcp-test-server:
+    # Opt-in via `scripts/compose.sh --profile mcp-test-server …` or COMPOSE_PROFILES=mcp-test-server.
     profiles:
       - mcp-test-server
     build:
@@ -41,4 +42,4 @@ services:
 networks:
   external:
     name: ${MCP_NETWORK_EXTERNAL}
-    external: true
+    external: true # Ensure this network exists (docker network create) before running the profile locally or in CI.

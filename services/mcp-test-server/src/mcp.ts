@@ -1,8 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { decodeJwt } from 'jose'
 import { z } from 'zod'
-import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/server/index.js'
-import type { ServerNotification, ServerRequest } from '@modelcontextprotocol/sdk/server/index.js'
 
 const pingInputSchema = z
   .object({
@@ -12,7 +10,37 @@ const pingInputSchema = z
 
 type PingArgs = z.infer<typeof pingInputSchema>
 
-type Extra = RequestHandlerExtra<ServerRequest, ServerNotification>
+const headerBagSchema = z.record(z.union([z.string(), z.array(z.string())]))
+
+const diagnosticsAuthInfoSchema = z
+  .object({
+    token: z.string().optional(),
+    clientId: z.string().optional(),
+    scopes: z.array(z.string()).optional(),
+    resource: z.union([z.string(), z.instanceof(URL)]).optional(),
+    expiresAt: z.number().optional(),
+    extra: z.record(z.unknown()).optional(),
+  })
+  .strict()
+
+const diagnosticsRequestInfoSchema = z
+  .object({
+    headers: z.union([z.instanceof(Headers), headerBagSchema]).optional(),
+  })
+  .strict()
+
+const diagnosticsExtraSchema = z
+  .object({
+    authInfo: diagnosticsAuthInfoSchema.optional(),
+    requestInfo: diagnosticsRequestInfoSchema.optional(),
+  })
+  .strict()
+
+type DiagnosticsAuthInfo = z.infer<typeof diagnosticsAuthInfoSchema>
+type DiagnosticsRequestInfo = z.infer<typeof diagnosticsRequestInfoSchema>
+type DiagnosticsExtra = z.infer<typeof diagnosticsExtraSchema>
+
+type HeaderBag = Record<string, string | string[]>
 
 export interface BuildMcpServerOptions {
   allowedOrigins: string[]
@@ -52,22 +80,42 @@ export async function buildMcpServer(options: BuildMcpServerOptions) {
       description: diagnosticsToolMetadata.description,
       inputSchema: pingInputSchema.shape,
     },
-    async (args: PingArgs | undefined, extra: Extra) => ({
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(buildDiagnosticsPayload(args, extra, options), null, 2),
-        },
-      ],
-    }),
+    async (args: PingArgs | undefined, extra: unknown) => {
+      const parsedExtra = diagnosticsExtraSchema.safeParse(extra)
+      const diagnosticsExtra: DiagnosticsExtra = parsedExtra.success ? parsedExtra.data : {}
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(buildDiagnosticsPayload(args, diagnosticsExtra, options), null, 2),
+          },
+        ],
+      }
+    },
   )
 
   return server
 }
 
+function getHeader(
+  headers: DiagnosticsRequestInfo['headers'] | undefined,
+  name: string,
+): string | null {
+  if (!headers) return null
+  if (typeof (headers as Headers).get === 'function') {
+    return ((headers as Headers).get(name) ?? null) as string | null
+  }
+  const bag = headers as HeaderBag
+  const candidate = bag[name] ?? bag[name.toLowerCase()]
+  if (Array.isArray(candidate)) {
+    return candidate[0] ?? null
+  }
+  return candidate ?? null
+}
+
 export function buildDiagnosticsPayload(
   args: PingArgs | undefined,
-  extra: Extra,
+  extra: DiagnosticsExtra,
   options: BuildMcpServerOptions,
 ): DiagnosticsMetadata {
   const timestamp = new Date().toISOString()
@@ -88,26 +136,30 @@ export function buildDiagnosticsPayload(
       metadata.token.expiresAt = new Date(authInfo.expiresAt * 1000).toISOString()
     }
 
-    try {
-      const decoded = decodeJwt(authInfo.token)
-      if (decoded.sub) metadata.token.subject = String(decoded.sub)
-      if (decoded.aud) metadata.token.audiences = Array.isArray(decoded.aud) ? decoded.aud : [decoded.aud]
-      if (typeof decoded.exp === 'number') {
-        metadata.token.expiresAt = new Date(decoded.exp * 1000).toISOString()
+    if (authInfo.token) {
+      try {
+        const decoded = decodeJwt(authInfo.token)
+        if (decoded.sub) metadata.token.subject = String(decoded.sub)
+        if (decoded.aud) metadata.token.audiences = Array.isArray(decoded.aud) ? decoded.aud : [decoded.aud]
+        if (typeof decoded.exp === 'number') {
+          metadata.token.expiresAt = new Date(decoded.exp * 1000).toISOString()
+        }
+      } catch (err) {
+        metadata.token = {
+          ...metadata.token,
+          subject: undefined,
+          audiences: undefined,
+        }
+        console.warn('Failed to decode JWT payload for diagnostics.ping', err)
       }
-    } catch (err) {
-      metadata.token = {
-        ...metadata.token,
-        subject: undefined,
-        audiences: undefined,
-      }
-      console.warn('Failed to decode JWT payload for diagnostics.ping', err)
     }
   }
 
-  metadata.userId = extra.authInfo ? String(extra.authInfo.extra?.userId ?? extra.authInfo.clientId ?? '') || null : null
+  metadata.userId = extra.authInfo
+    ? String(extra.authInfo.extra?.userId ?? extra.authInfo.clientId ?? '') || null
+    : null
 
-  const originHeader = extra.requestInfo?.headers?.get('origin') ?? null
+  const originHeader = getHeader(extra.requestInfo?.headers, 'origin')
   metadata.origin = originHeader
 
   return metadata

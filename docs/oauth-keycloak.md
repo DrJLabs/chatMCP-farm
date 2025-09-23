@@ -127,6 +127,12 @@ Redirect URIs for ChatGPT-managed clients are registered automatically during Dy
 
 ## 5. Validation playbook
 
+> **Prep checklist:**
+> - Enable ChatGPT *Developer Mode* for the target conversation so the connector can issue OAuth requests.
+> - Ensure the manifest lists `search` and `fetch` (lightweight stubs are acceptable) or log an explicit follow-up if deferred.
+> - Run `scripts/kc/create_mcp_scope.sh --resource <MCP_PUBLIC_BASE_URL>` so the audience scope attaches to DCR clients prior to validation.
+> - Confirm trusted hosts via `scripts/kc/trusted_hosts.sh --list` (add ChatGPT domains if missing).
+
 1. **Metadata sanity**
    ```bash
    curl -s https://<MCP_HOST>/.well-known/mcp/manifest.json | jq '.schemaVersion'
@@ -162,12 +168,26 @@ Redirect URIs for ChatGPT-managed clients are registered automatically during Dy
         -H 'Content-Type: application/json' \
         -X POST <MCP_TRANSPORT_URL> \
         -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0.1"}}}'
-   grep -i 'Mcp-Session-Id' headers.txt
-   ```
-6. **Log correlation**
+  grep -i 'Mcp-Session-Id' headers.txt
+  if ! grep -iq 'Mcp-Protocol-Version' headers.txt; then
+    echo 'Mcp-Protocol-Version header missing' >&2
+    exit 1
+  fi
+  ```
+6. **Automated smoke (preferred)**
    ```bash
+   CLIENT_ID="$KC_CLIENT_ID" CLIENT_SECRET="$KC_CLIENT_SECRET" \
+     scripts/healthcheck.sh --base-url <MCP_TRANSPORT_URL> --issuer {{KC_ISSUER}}
+
+   MCP_BASE_URL=<MCP_TRANSPORT_URL> MCP_ACCESS_TOKEN="$ACCESS_TOKEN" \
+     npm run smoke --workspace mcp-test-server
+   ```
+   - The healthcheck logs the enforced `Accept` header and observed `Mcp-Session-Id`.
+   - The smoke script echoes the initialize payload plus any `Mcp-Protocol-Version` headers for audit trails.
+7. **Log correlation**
+   ```bash
+   scripts/compose.sh --profile mcp-test-server logs --tail=200
    docker compose logs --tail=200 keycloak | grep '<timestamp>'
-   scripts/compose.sh logs --tail=200 <mcp-service> | grep '<request-id>'
    ```
 
 ---

@@ -1,0 +1,62 @@
+# Generated from qa-gate-template-v1
+schema: 1
+story: "1.3"
+story_title: "Compose Integration & ChatGPT Runbook"
+gate: "PASS"
+status_reason: "Automated guardrails now enforce compose profile isolation and secret handling; residual risks monitored via guard script schedule."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-22T21:55:00Z"
+waiver:
+  active: false
+top_issues: []
+risk_summary:
+  totals:
+    critical: 0
+    high: 0
+    medium: 3
+    low: 2
+  highest:
+    id: TECH-002
+    score: 4
+    title: "Accept header/MCP metadata drift from spec"
+  recommendations:
+    must_fix: []
+    monitor:
+      - "Re-run Developer Mode connector smoke quarterly per risk profile."
+      - "Keep Accept header/MCP protocol logging in smoke scripts under review for spec changes."
+      - "Ensure guardrail scripts (`npm run guard`) run in CI to maintain compose/secret coverage."
+test_design:
+  scenarios_total: 8
+  by_level:
+    unit: 2
+    integration: 4
+    e2e: 2
+  by_priority:
+    p0: 4
+    p1: 3
+    p2: 1
+    p3: 0
+  coverage_gaps: []
+trace:
+  totals:
+    requirements: 5
+    full: 3
+    partial: 2
+    none: 0
+  planning_ref: 'docs/qa/assessments/1.3-test-design-20250922.md'
+  uncovered: []
+  notes: 'docs/qa/assessments/1.3-trace-20250922.md'
+nfr_validation:
+  _assessed: [security, performance, reliability, maintainability]
+  security:
+    status: PASS
+    notes: 'Guardrail prevents inline secrets and deprecated flags; healthcheck enforces env-sourced credentials.'
+  performance:
+    status: PASS
+    notes: 'No runtime regressions; smoke tooling remains lightweight.'
+  reliability:
+    status: PASS
+    notes: 'Healthcheck and smoke scripts now log MCP headers for observability.'
+  maintainability:
+    status: PASS
+    notes: 'Build config isolated; documentation and tests updated for new behaviors.'
