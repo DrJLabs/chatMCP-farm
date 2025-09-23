@@ -8,9 +8,28 @@ const pingInputSchema = z
   })
   .strict()
 
+export const pingInputJsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    note: { type: 'string', maxLength: 240 },
+  },
+} as const
+
 type PingArgs = z.infer<typeof pingInputSchema>
 
+type HeaderLike = { get: (name: string) => unknown }
+type HeaderBag = Record<string, string | string[]>
+
+function isHeaderLike(value: unknown): value is HeaderLike {
+  return !!value && typeof value === 'object' && typeof (value as any).get === 'function'
+}
+
 const headerBagSchema = z.record(z.union([z.string(), z.array(z.string())]))
+
+const headerLikeSchema = z
+  .any()
+  .refine(isHeaderLike, { message: 'Headers-like object' })
 
 const diagnosticsAuthInfoSchema = z
   .object({
@@ -25,7 +44,7 @@ const diagnosticsAuthInfoSchema = z
 
 const diagnosticsRequestInfoSchema = z
   .object({
-    headers: z.union([z.instanceof(Headers), headerBagSchema]).optional(),
+    headers: z.union([headerLikeSchema, headerBagSchema]).optional(),
   })
   .strict()
 
@@ -39,8 +58,6 @@ const diagnosticsExtraSchema = z
 type DiagnosticsAuthInfo = z.infer<typeof diagnosticsAuthInfoSchema>
 type DiagnosticsRequestInfo = z.infer<typeof diagnosticsRequestInfoSchema>
 type DiagnosticsExtra = z.infer<typeof diagnosticsExtraSchema>
-
-type HeaderBag = Record<string, string | string[]>
 
 export interface BuildMcpServerOptions {
   allowedOrigins: string[]
@@ -78,7 +95,7 @@ export async function buildMcpServer(options: BuildMcpServerOptions) {
     diagnosticsToolMetadata.name,
     {
       description: diagnosticsToolMetadata.description,
-      inputSchema: pingInputSchema.shape,
+      inputSchema: pingInputJsonSchema,
     },
     async (args: PingArgs | undefined, extra: unknown) => {
       const parsedExtra = diagnosticsExtraSchema.safeParse(extra)
@@ -102,8 +119,15 @@ function getHeader(
   name: string,
 ): string | null {
   if (!headers) return null
-  if (typeof (headers as Headers).get === 'function') {
-    return ((headers as Headers).get(name) ?? null) as string | null
+  if (isHeaderLike(headers)) {
+    const raw = headers.get(name)
+    if (raw == null) {
+      return null
+    }
+    if (Array.isArray(raw)) {
+      return raw[0] ?? null
+    }
+    return typeof raw === 'string' ? raw : String(raw)
   }
   const bag = headers as HeaderBag
   const candidate = bag[name] ?? bag[name.toLowerCase()]
@@ -150,7 +174,8 @@ export function buildDiagnosticsPayload(
           subject: undefined,
           audiences: undefined,
         }
-        console.warn('Failed to decode JWT payload for diagnostics.ping', err)
+        const reason = err instanceof Error ? err.message : String(err)
+        console.warn(`Failed to decode JWT payload for ${diagnosticsToolMetadata.name}: ${reason}`)
       }
     }
   }

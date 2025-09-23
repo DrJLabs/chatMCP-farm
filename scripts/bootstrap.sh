@@ -45,6 +45,8 @@ import os
 from pathlib import Path
 service = os.environ['BOOTSTRAP_SERVICE_NAME']
 prefix = service.upper().replace('-', '_')
+if prefix and prefix[0].isdigit():
+    prefix = f"_{prefix}"
 dest = Path(os.environ['DEST_DIR'])
 for path in dest.rglob('*'):
     if path.is_file():
