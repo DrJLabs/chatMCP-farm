@@ -111,37 +111,59 @@ if [[ ! ${RESOURCE} =~ ^https?:// ]]; then
 fi
 
 RESOURCE_CLEAN=${RESOURCE%/}
-RESOURCE_HOST=$(python3 - <<'PY'
+RESOURCE_HOST=$(python3 - "$RESOURCE_CLEAN" <<'PY'
 import sys
 from urllib.parse import urlparse
 url = urlparse(sys.argv[1])
 if not url.scheme or not url.netloc:
     raise SystemExit("invalid resource URL")
-print(url.hostname or "")
+if not url.hostname:
+    raise SystemExit("resource URL missing hostname")
+print(url.hostname.lower())
 PY
-"${RESOURCE_CLEAN}")
-
-if [[ -z "${RESOURCE_HOST}" ]]; then
-  echo "error: resource '${RESOURCE_CLEAN}' missing hostname" >&2
-  exit 2
-fi
+)
 
 slugify() {
   python3 - "$1" <<'PY'
 import re, sys
-host = sys.argv[1].lower()
-slug = re.sub(r'[^a-z0-9]+', '-', host).strip('-')
+value = sys.argv[1].lower()
+slug = re.sub(r'[^a-z0-9]+', '-', value).strip('-')
 print(slug or 'mcp-resource')
 PY
 }
 
-HOST_SLUG=$(slugify "${RESOURCE_HOST}")
+PRIMARY_LABEL=$(python3 - "$RESOURCE_HOST" <<'PY'
+import sys
+host = sys.argv[1]
+print(host.split('.')[0].lower())
+PY
+)
+
+HOST_SLUG_SHORT=$(slugify "${PRIMARY_LABEL}")
+HOST_SLUG_FULL=$(slugify "${RESOURCE_HOST}")
+
+normalize_base() {
+  local value=$1
+  if [[ $value == mcp-* ]]; then
+    printf '%s' "$value"
+  else
+    printf 'mcp-%s' "$value"
+  fi
+}
+
+BASE_SHORT=$(normalize_base "${HOST_SLUG_SHORT}")
+BASE_FULL=$(normalize_base "${HOST_SLUG_FULL}")
 
 if [[ -z "${SCOPE_NAME}" ]]; then
-  SCOPE_NAME="mcp-${HOST_SLUG}-resource"
+  SCOPE_NAME="${BASE_SHORT}-resource"
 fi
+
 if [[ -z "${MAPPER_NAME}" ]]; then
-  MAPPER_NAME="mcp-${HOST_SLUG}-audience"
+  if [[ "${SCOPE_NAME}" == "${BASE_FULL}-resource" ]]; then
+    MAPPER_NAME="${BASE_FULL}-audience"
+  else
+    MAPPER_NAME="${SCOPE_NAME%-resource}-audience"
+  fi
 fi
 
 CMD=("${CREATE_SCOPE_SCRIPT}" "--resource" "${RESOURCE_CLEAN}" "--scope-name" "${SCOPE_NAME}" "--mapper-name" "${MAPPER_NAME}" "--trusted-policy-alias" "${TRUSTED_ALIAS}")

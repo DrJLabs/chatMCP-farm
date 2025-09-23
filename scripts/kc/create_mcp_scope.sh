@@ -98,8 +98,9 @@ if [[ -z "${MAPPER_ID}" ]]; then
   kc_api_no_content POST "${REALM}/client-scopes/${SCOPE_ID}/protocol-mappers/models" "${MAPPER_PAYLOAD}"
   echo "  mapper created"
 else
-  kc_api_no_content PUT "${REALM}/client-scopes/${SCOPE_ID}/protocol-mappers/models/${MAPPER_ID}" "${MAPPER_PAYLOAD}"
-  echo "  mapper updated"
+  kc_api_no_content DELETE "${REALM}/client-scopes/${SCOPE_ID}/protocol-mappers/models/${MAPPER_ID}"
+  kc_api_no_content POST "${REALM}/client-scopes/${SCOPE_ID}/protocol-mappers/models" "${MAPPER_PAYLOAD}"
+  echo "  mapper replaced"
 fi
 
 echo "== Ensuring scope is a realm default"

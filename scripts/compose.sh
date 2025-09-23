@@ -14,4 +14,9 @@ fi
 
 COMPOSE_FILE=$(IFS=:; echo "${COMPOSE_FILES[*]}")
 export COMPOSE_FILE
+
+# Ensure services have a sane default build context without requiring callers to
+# export MCP_BUILD_CONTEXT manually. Individual services can still override.
+export MCP_BUILD_CONTEXT="${MCP_BUILD_CONTEXT:-${ROOT_DIR}}"
+
 exec docker compose "$@"
