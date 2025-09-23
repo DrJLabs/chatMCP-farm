@@ -95,16 +95,33 @@ export async function buildMcpServer(options: BuildMcpServerOptions) {
     diagnosticsToolMetadata.name,
     {
       description: diagnosticsToolMetadata.description,
-      inputSchema: pingInputJsonSchema,
+      // Provide the Zod shape so the SDK emits JSON Schema and validates args
+      inputSchema: pingInputSchema.shape,
     },
     async (args: PingArgs | undefined, extra: unknown) => {
+      const parsedArgs = pingInputSchema.safeParse(args ?? {})
+      if (!parsedArgs.success) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'Invalid diagnostics.ping input',
+            },
+          ],
+        }
+      }
+
       const parsedExtra = diagnosticsExtraSchema.safeParse(extra)
       const diagnosticsExtra: DiagnosticsExtra = parsedExtra.success ? parsedExtra.data : {}
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(buildDiagnosticsPayload(args, diagnosticsExtra, options), null, 2),
+            text: JSON.stringify(
+              buildDiagnosticsPayload(parsedArgs.data, diagnosticsExtra, options),
+              null,
+              2,
+            ),
           },
         ],
       }

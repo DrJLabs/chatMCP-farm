@@ -111,7 +111,7 @@ if [[ ! ${RESOURCE} =~ ^https?:// ]]; then
 fi
 
 RESOURCE_CLEAN=${RESOURCE%/}
-RESOURCE_HOST=$(python3 - "$RESOURCE_CLEAN" <<'PY'
+if ! RESOURCE_HOST="$(python3 - "$RESOURCE_CLEAN" <<'PY'
 import sys
 from urllib.parse import urlparse
 url = urlparse(sys.argv[1])
@@ -121,7 +121,15 @@ if not url.hostname:
     raise SystemExit("resource URL missing hostname")
 print(url.hostname.lower())
 PY
-)
+)"; then
+  echo "error: invalid resource URL '${RESOURCE_CLEAN}'" >&2
+  exit 2
+fi
+
+if [[ -z "${RESOURCE_HOST}" ]]; then
+  echo "error: resource '${RESOURCE_CLEAN}' missing hostname" >&2
+  exit 2
+fi
 
 slugify() {
   python3 - "$1" <<'PY'
