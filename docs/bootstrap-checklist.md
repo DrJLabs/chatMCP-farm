@@ -5,8 +5,8 @@ This quickstart distills the OAuth and infrastructure requirements for bringing 
 > **Variable reference** (replace via `docs/config.sample.json` + `docs/local/config.local.json`)
 > - `{{KC_REALM}}` — Keycloak realm that issues OAuth tokens for the MCP servers.
 > - `{{KC_ISSUER}}` — Fully qualified issuer URL for the realm.
-> - `{{MCP_PUBLIC_BASE_URL}}` — Public origin of the MCP service (e.g., `https://svc.example.com`).
-> - `{{MCP_TRANSPORT_URL}}` — Transport endpoint (`{{MCP_PUBLIC_BASE_URL}}/mcp`) consumed by MCP clients.
+> - `{{MCP_PUBLIC_BASE_URL}}` — Canonical MCP OAuth resource URL (include the transport path, e.g., `https://svc.example.com/mcp`).
+> - `{{MCP_TRANSPORT_URL}}` — Streamable HTTP endpoint served by the MCP (defaults to `{{MCP_PUBLIC_BASE_URL}}` when omitted).
 > - `{{PRM_RESOURCE_URL}}` — OAuth protected resource URL; equals `{{MCP_PUBLIC_BASE_URL}}`.
 > - `{{MCP_SCOPE_NAME}}` — Audience scope attached to clients that should reach the MCP resource.
 > - `{{OIDC_AUDIENCE}}` — Additional audience accepted by the service (legacy clients, optional).
@@ -22,10 +22,10 @@ This quickstart distills the OAuth and infrastructure requirements for bringing 
 ## Bootstrap Steps
 1. **Generate service skeleton**
    - Run `scripts/bootstrap.sh <service-name>` to copy the Express template wired to `mcp-auth-kit` into `services/<service-name>`.
-   - Copy `services/<service-name>/.env.example` to `.env`, set `MCP_PUBLIC_BASE_URL`, derive `MCP_TRANSPORT_URL=${MCP_PUBLIC_BASE_URL}/mcp`, and configure `KC_ISSUER` (see "AUTH_ENV_VARS" in `packages/mcp-auth-kit/README.md` for supported keys).
+   - Copy `services/<service-name>/.env.example` to `.env`, set `MCP_PUBLIC_BASE_URL` to the canonical resource (for example `https://svc.example.com/mcp`), optionally override `MCP_TRANSPORT_URL` if the transport lives elsewhere, and configure `KC_ISSUER` (see "AUTH_ENV_VARS" in `packages/mcp-auth-kit/README.md` for supported keys).
 2. **Register Keycloak audience**
-   - Run `scripts/kc/create_mcp_scope.sh --resource <MCP_PUBLIC_BASE_URL>` to provision the scope, mapper, default assignments, and trusted host entry (requires `.keycloak-env` with `KC_CLIENT_ID`/`KC_CLIENT_SECRET`; defaults point to the local admin proxy at `http://127.0.0.1:5050/auth`).
-   - Validate with `scripts/kc/status.sh --resource <MCP_PUBLIC_BASE_URL>` and inspect/update the host list via `scripts/kc/trusted_hosts.sh --list` / `--add` as needed.
+   - Run `scripts/kc/bootstrap_mcp_host.sh --env-file services/<service-name>/.env --verify` to derive a host-specific scope (e.g., `mcp-<host>-resource`), attach it to realm defaults, and update the Trusted Hosts policy. Pass `--attach-client <uuid>` for any existing ChatGPT UUID clients you want updated immediately or `--trusted-policy-alias <name>` if the policy uses a custom alias. The script authenticates with the service account defined in `.keycloak-env` (`KC_CLIENT_ID`/`KC_CLIENT_SECRET`) and defaults to the local admin proxy at `http://127.0.0.1:5050/auth`. Full guidance lives in `docs/runbooks/keycloak-mcp-scope-bootstrap.md`.
+   - Review the verification output; re-run `scripts/kc/status.sh --resource <MCP_PUBLIC_BASE_URL>` if you need a standalone report or `scripts/kc/trusted_hosts.sh --list` / `--add` to make manual adjustments.
 3. **Configure manifest + PRM**
    - Verify service exports `/.well-known/mcp/manifest.json` and `/.well-known/oauth-protected-resource` with the canonical resource URL.
 4. **Smoke test**

@@ -1,6 +1,7 @@
 # Node artifacts
 node_modules/
 dist/
+services/mcp-test-server/test/**/*.js
 
 # Environment files
 .env

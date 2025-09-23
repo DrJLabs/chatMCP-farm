@@ -55,9 +55,9 @@ fi
 
 initialize_keycloak_client
 
-TRUSTED_COMPONENT=$(get_trusted_hosts_component "${REALM}")
+TRUSTED_COMPONENT=$(get_trusted_hosts_component "${REALM}" "${ALIAS}")
 if [[ -z "${TRUSTED_COMPONENT}" ]]; then
-  echo "error: trusted hosts policy not found in realm '${REALM}'" >&2
+  echo "error: trusted hosts policy '${ALIAS}' not found in realm '${REALM}'" >&2
   exit 4
 fi
 

@@ -6,14 +6,14 @@ const BASE_ENV = {
   OIDC_ISSUER: 'https://auth.local/realms/test',
   OIDC_AUDIENCE: 'https://mcp.local/mcp',
   MCP_PUBLIC_BASE_URL: 'https://mcp.local/mcp',
-  MCP_TEST_SERVER_ALLOWED_ORIGINS: 'https://chatgpt.com,https://chat.openai.com',
+  MCP_ALLOWED_ORIGINS: 'https://chatgpt.com,https://chat.openai.com',
 }
 
 describe('Accept header enforcement', () => {
   it('returns 406 when Accept header missing', async () => {
     const env = {
       ...BASE_ENV,
-      MCP_TEST_SERVER_REQUIRE_AUTH: 'false',
+      REQUIRE_AUTH: 'false',
     }
     const { app } = await createApp({ env })
 
@@ -38,7 +38,7 @@ describe('Accept header enforcement', () => {
   it('honours Accept header and returns protocol + session metadata', async () => {
     const env = {
       ...BASE_ENV,
-      MCP_TEST_SERVER_REQUIRE_AUTH: 'false',
+      REQUIRE_AUTH: 'false',
     }
     const { app } = await createApp({ env })
 

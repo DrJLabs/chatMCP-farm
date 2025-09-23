@@ -7,8 +7,8 @@ function buildTestEnv(overrides: Record<string, string> = {}) {
     OIDC_ISSUER: 'https://auth.local/realms/test',
     OIDC_AUDIENCE: 'https://mcp.local/mcp',
     MCP_PUBLIC_BASE_URL: 'https://mcp.local/mcp',
-    MCP_TEST_SERVER_ALLOWED_ORIGINS: 'https://chatgpt.com,https://chat.openai.com',
-    MCP_TEST_SERVER_REQUIRE_AUTH: 'true',
+    MCP_ALLOWED_ORIGINS: 'https://chatgpt.com,https://chat.openai.com',
+    REQUIRE_AUTH: 'true',
     MCP_NAME_HUMAN: 'Test Server',
     MCP_NAME_MODEL: 'test_server',
     MCP_DESCRIPTION_HUMAN: 'Human readable description',
@@ -41,7 +41,7 @@ describe('manifest and metadata endpoints', async () => {
   })
 
   it('returns protected-resource metadata with challenge header', async () => {
-    const env = buildTestEnv({ MCP_TEST_SERVER_REQUIRE_AUTH: 'true' })
+    const env = buildTestEnv({ REQUIRE_AUTH: 'true' })
     const { app } = await createApp({ env })
 
     const response = await request(app).get('/.well-known/oauth-protected-resource')

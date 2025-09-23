@@ -5,15 +5,15 @@
 This document captures every configuration requirement and quirk we encountered while getting the MCP server working as a ChatGPT Developer Mode connector. Follow these steps end-to-end when standing up or debugging the integration.
 
 > **Scope**: Keycloak 26.x realm `{{KC_REALM}}`, MCP server (TypeScript) deployed behind Traefik/Cloudflare at `<MCP_PUBLIC_BASE_URL>`, ChatGPT Developer Mode connectors (September 2025).
-> **Variable key**: `MCP_HOST` is the canonical hostname (e.g., `service.example.com`); `MCP_TRANSPORT_URL = https://<MCP_HOST>/mcp`.
+> **Variable key**: `MCP_HOST` is the canonical hostname (e.g., `service.example.com`); `MCP_TRANSPORT_URL = <MCP_PUBLIC_BASE_URL>` unless the transport lives on a separate path.
 >
 > **Variable reference** (configure via `docs/config.sample.json` + `docs/local/config.local.json`)
 > - `{{KC_REALM}}` — Keycloak realm name for the MCP deployment.
 > - `{{KC_HOSTNAME}}` — Base URL for public Keycloak requests (no `/realms/...`).
 > - `{{KC_HOSTNAME_ADMIN}}` — Admin hostname for local access to the realm.
 > - `{{KC_ISSUER}}` — Issuer URL (`{{KC_HOSTNAME}}/realms/{{KC_REALM}}`).
-> - `{{MCP_PUBLIC_BASE_URL}}` — Public origin for the MCP service (OAuth protected resource).
-> - `{{MCP_TRANSPORT_URL}}` — Streamable HTTP endpoint for the MCP server (`{{MCP_PUBLIC_BASE_URL}}/mcp`).
+> - `{{MCP_PUBLIC_BASE_URL}}` — Canonical OAuth protected resource URL (include the transport path, e.g., `https://service.example.com/mcp`).
+> - `{{MCP_TRANSPORT_URL}}` — Streamable HTTP endpoint for the MCP server (defaults to `{{MCP_PUBLIC_BASE_URL}}`).
 > - `{{MCP_SCOPE_NAME}}` — Audience client scope injected into OAuth tokens.
 > - `{{OIDC_AUDIENCE}}` — Additional audience identifier accepted by the MCP service (legacy compatibility).
 
@@ -54,7 +54,7 @@ OAuth succeeds only if Keycloak issues a token whose `aud` contains the MCP reso
 - Added `{{MCP_SCOPE_NAME}}` to the realm’s **default client scopes** (`/realms/{{KC_REALM}}/default-default-client-scopes`).
 - For existing ChatGPT registration clients and the static `{{OIDC_AUDIENCE}}`, we explicitly added `{{MCP_SCOPE_NAME}}` to their default scopes so issued tokens include the MCP audience immediately.
 
-Automation tip: `scripts/kc/create_mcp_scope.sh --resource <MCP_PUBLIC_BASE_URL>` performs these steps idempotently (scope, mapper, trusted host entry, and default-scope attachments). Follow with `scripts/kc/status.sh --resource <MCP_PUBLIC_BASE_URL>` to confirm audience mappings and client assignments, and `scripts/kc/trusted_hosts.sh --list` / `--add <host>` to review or tweak the trusted host policy. All scripts authenticate via the `KC_CLIENT_ID` / `KC_CLIENT_SECRET` service account defined in `.keycloak-env` using the client-credentials grant, so they no longer depend on the Keycloak Docker stack running in this repository.
+Automation tip: `scripts/kc/bootstrap_mcp_host.sh --env-file services/<service-name>/.env --verify` derives host-specific scope/mapper names, calls `create_mcp_scope.sh` under the hood, attaches the scope to realm defaults (plus any clients specified with `--attach-client`), and updates the Trusted Hosts policy in a single step. Follow-on scripts remain available for spot checks: `scripts/kc/status.sh --resource <MCP_PUBLIC_BASE_URL>` confirms scope + mapper assignments, and `scripts/kc/trusted_hosts.sh --list` / `--add <host>` can be used for manual policy edits. All scripts authenticate via the `KC_CLIENT_ID` / `KC_CLIENT_SECRET` service account defined in `.keycloak-env` using the client-credentials grant, so they do not rely on running this repository’s Docker stack. See `docs/runbooks/keycloak-mcp-scope-bootstrap.md` for expanded examples and troubleshooting guidance.
 
 ### 2.4 Redirect URIs and origins
 
@@ -94,7 +94,7 @@ Redirect URIs for ChatGPT-managed clients are registered automatically during Dy
 | Variable | Value | Notes |
 | --- | --- | --- |
 | `MCP_PUBLIC_BASE_URL` | `<MCP_PUBLIC_BASE_URL>` | Must match canonical resource |
-| `MCP_TRANSPORT_URL` | `<MCP_PUBLIC_BASE_URL>/mcp` | Streamable HTTP endpoint served by the MCP |
+| `MCP_TRANSPORT_URL` | `<MCP_PUBLIC_BASE_URL>` | Streamable HTTP endpoint served by the MCP (override only if transport lives elsewhere) |
 | `PRM_RESOURCE_URL` | `<MCP_PUBLIC_BASE_URL>` | Used for PRM + WWW-Authenticate helper |
 | `OIDC_ISSUER` | `{{KC_ISSUER}}` | Issuer for Keycloak realm |
 | `OIDC_AUDIENCE` | `<MCP_PUBLIC_BASE_URL>,{{OIDC_AUDIENCE}}` | Accept canonical resource and legacy client id |
@@ -130,8 +130,8 @@ Redirect URIs for ChatGPT-managed clients are registered automatically during Dy
 > **Prep checklist:**
 > - Enable ChatGPT *Developer Mode* for the target conversation so the connector can issue OAuth requests.
 > - Ensure the manifest lists `search` and `fetch` (lightweight stubs are acceptable) or log an explicit follow-up if deferred.
-> - Run `scripts/kc/create_mcp_scope.sh --resource <MCP_PUBLIC_BASE_URL>` so the audience scope attaches to DCR clients prior to validation.
-> - Confirm trusted hosts via `scripts/kc/trusted_hosts.sh --list` (add ChatGPT domains if missing).
+> - Run `scripts/kc/bootstrap_mcp_host.sh --env-file services/<service-name>/.env --verify` (or `--resource <MCP_PUBLIC_BASE_URL>`) so the audience scope attaches to DCR clients prior to validation and the Trusted Hosts policy includes the MCP domain.
+> - Confirm trusted hosts via `scripts/kc/trusted_hosts.sh --list` if you need a manual audit.
 
 1. **Metadata sanity**
    ```bash
@@ -249,25 +249,20 @@ To reuse the `{{KC_REALM}}` realm for more MCP backends (e.g., additional servic
    ```
 
 3. **Create a dedicated audience scope**
-   ```bash
-   kcadm.sh create client-scopes -r {{KC_REALM}} -s name=mcp-resource-<alias> -s protocol=openid-connect
-   kcadm.sh create client-scopes/<scope-id>/protocol-mappers/models -r {{KC_REALM}} -f mapper.json
-   # mapper.json => oidc-audience-mapper with included.custom.audience=https://<new-mcp-host>/mcp
-   ```
-   Keep `allow-default-scopes=true` in client-registration policy so DCR clients may receive this scope.
-
-4. **Onboard ChatGPT connector**
-   - Temporarily add `mcp-resource-<alias>` to the realm’s default client scopes:
+   - Preferred: `scripts/kc/bootstrap_mcp_host.sh --resource https://<new-mcp-host>/mcp --verify` (pass `--trusted-policy-alias <name>` if your realm renamed the policy). The script ensures the scope, mapper, realm default assignment, client attachments, and Trusted Hosts updates in one run.
+   - Manual fallback:
      ```bash
+     kcadm.sh create client-scopes -r {{KC_REALM}} -s name=mcp-resource-<alias> -s protocol=openid-connect
+     kcadm.sh create client-scopes/<scope-id>/protocol-mappers/models -r {{KC_REALM}} -f mapper.json
+     # mapper.json => oidc-audience-mapper with included.custom.audience=https://<new-mcp-host>/mcp
      kcadm.sh update realms/{{KC_REALM}}/default-default-client-scopes/<scope-id> -n
      ```
-   - Run the ChatGPT connector setup. It will register a UUID client.
-   - After registration succeeds, remove the scope from `default-default-client-scopes` (to avoid handing out audience claims to unrelated clients) and explicitly attach it to the newly-created ChatGPT client:
-     ```bash
-     kcadm.sh delete realms/{{KC_REALM}}/default-default-client-scopes/<scope-id>
-     kcadm.sh update clients/<new-client-id>/default-client-scopes/<scope-id> -n
-     ```
-   - If you want a pre-provisioned static client (like `{{OIDC_AUDIENCE}}`), attach the scope there as well.
+     Keep `allow-default-scopes=true` in client-registration policy so DCR clients automatically receive the scope.
+
+4. **Onboard ChatGPT connector**
+   - Run the Developer Mode connector setup; the DCR client should inherit `mcp-resource-<alias>` via the default-scope assignment created above. Use `scripts/kc/status.sh --resource https://<new-mcp-host>/mcp --client <new-client-id>` to verify.
+   - Leave the scope in `default-default-client-scopes` unless you have a strict compliance requirement. Removing it means every new ChatGPT registration will need manual intervention, and future executions of `bootstrap_mcp_host.sh` will re-add the default assignment.
+   - If you must scope it down, remove the default assignment and reattach the scope to each intended client (`kcadm.sh update clients/<client-id>/default-client-scopes/<scope-id> -n`). Document the rationale so automation runs don’t undo the change.
 
 5. **Update MCP env**
    - `OIDC_AUDIENCE` should include both the canonical resource and any legacy client id (if the server accepts multiple audiences).
