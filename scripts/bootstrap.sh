@@ -44,11 +44,13 @@ BOOTSTRAP_SERVICE_NAME="${SERVICE_NAME}" DEST_DIR="${DEST_DIR}" python3 - <<'PY'
 import os
 from pathlib import Path
 service = os.environ['BOOTSTRAP_SERVICE_NAME']
+prefix = service.upper().replace('-', '_')
 dest = Path(os.environ['DEST_DIR'])
 for path in dest.rglob('*'):
     if path.is_file():
         text = path.read_text()
         text = text.replace('__SERVICE_NAME__', service)
+        text = text.replace('__SERVICE_ENV_PREFIX__', prefix)
         path.write_text(text)
 PY
 
