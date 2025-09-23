@@ -5,8 +5,7 @@ WORKDIR /workspace
 COPY package.json package-lock.json tsconfig.base.json ./
 COPY services/mcp-test-server/package.json services/mcp-test-server/
 COPY packages/mcp-auth-kit/package.json packages/mcp-auth-kit/
-RUN npm ci --workspace packages/mcp-auth-kit --workspace services/mcp-test-server
-
+RUN npm ci --ignore-scripts --workspace packages/mcp-auth-kit --workspace services/mcp-test-server
 COPY packages/mcp-auth-kit/tsconfig.json packages/mcp-auth-kit/
 COPY packages/mcp-auth-kit/src packages/mcp-auth-kit/src
 RUN npm run build --workspace packages/mcp-auth-kit
@@ -32,7 +31,8 @@ COPY packages/mcp-auth-kit/package.json ./packages/mcp-auth-kit/package.json
 COPY --from=deps /workspace/packages/mcp-auth-kit/dist ./packages/mcp-auth-kit/dist
 COPY --from=deps /workspace/node_modules ./node_modules
 COPY --from=builder /workspace/services/mcp-test-server/dist ./services/mcp-test-server/dist
-RUN npm prune --omit=dev --workspaces --include-workspace-root && npm cache clean --force
+RUN npm_config_ignore_scripts=true npm prune --omit=dev --workspaces --include-workspace-root \
+  && npm cache clean --force
 RUN chown -R node:node /app
 WORKDIR /app/services/mcp-test-server
 USER node
