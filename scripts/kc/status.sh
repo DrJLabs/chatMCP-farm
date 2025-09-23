@@ -82,29 +82,29 @@ else
   fi
 fi
 
-echo "\n== Realm default scopes =="
+printf "\n== Realm default scopes ==\n"
 DEFAULT_IDS=$(kc_api_json GET "${REALM}/default-default-client-scopes" | jq -r '.[].id')
-if echo "${DEFAULT_IDS}" | grep -q "${SCOPE_ID}"; then
+if echo "${DEFAULT_IDS}" | grep -Fxq "${SCOPE_ID}"; then
   echo "scope '${SCOPE_NAME}' assigned to default scopes"
 else
   echo "scope '${SCOPE_NAME}' missing from realm defaults"
 fi
 
 if [[ ${#CLIENTS[@]} -gt 0 ]]; then
-  declare -A seen=()
-  declare -a uniq=()
+  seen_clients=" "
+  uniq_clients=()
   for cid in "${CLIENTS[@]}"; do
     [[ -z "${cid}" ]] && continue
-    if [[ -z "${seen[${cid}]:-}" ]]; then
-      seen["${cid}"]=1
-      uniq+=("${cid}")
+    if [[ "${seen_clients}" != *" ${cid} "* ]]; then
+      uniq_clients+=("${cid}")
+      seen_clients+=" ${cid} "
     fi
   done
-  CLIENTS=("${uniq[@]}")
+  CLIENTS=("${uniq_clients[@]}")
 fi
 
 if [[ ${#CLIENTS[@]} -gt 0 ]]; then
-  echo "\n== Client default scopes =="
+  printf "\n== Client default scopes ==\n"
   for client_id in "${CLIENTS[@]}"; do
     CLIENT_UUID=$(find_client_uuid "${REALM}" "${client_id}")
     if [[ -z "${CLIENT_UUID}" ]]; then
@@ -112,7 +112,7 @@ if [[ ${#CLIENTS[@]} -gt 0 ]]; then
       continue
     fi
     HAS_SCOPE=$(kc_api_json GET "${REALM}/clients/${CLIENT_UUID}/default-client-scopes" | jq -r '.[].id')
-    if echo "${HAS_SCOPE}" | grep -q "${SCOPE_ID}"; then
+    if echo "${HAS_SCOPE}" | grep -Fxq "${SCOPE_ID}"; then
       echo "${client_id}: scope attached"
     else
       echo "${client_id}: scope missing"
@@ -120,10 +120,10 @@ if [[ ${#CLIENTS[@]} -gt 0 ]]; then
   done
 fi
 
-echo "\n== Trusted Hosts policy =="
+printf "\n== Trusted Hosts policy ==\n"
 TRUSTED_COMPONENT=$(get_trusted_hosts_component "${REALM}" "${TRUSTED_POLICY_ALIAS}")
 if [[ -z "${TRUSTED_COMPONENT}" ]]; then
-  echo "trusted hosts policy '${TRUSTED_POLICY_ALIAS}' not found"
+  echo "trusted hosts policy '${TRUSTED_POLICY_ALIAS}' not found in realm '${REALM}'"
 else
   COMPONENT_NAME=$(printf '%s' "${TRUSTED_COMPONENT}" | jq -r '.name')
   echo "policy: ${COMPONENT_NAME}"
@@ -148,4 +148,4 @@ print((url.hostname or "").lower())
   fi
 fi
 
-echo "\nDone."
+printf "\nDone.\n"

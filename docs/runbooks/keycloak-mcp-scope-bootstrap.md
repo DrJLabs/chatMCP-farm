@@ -29,6 +29,7 @@ scripts/kc/bootstrap_mcp_host.sh \
 ```
 
 ## 4. Flag reference
+
 | Flag | Purpose |
 | --- | --- |
 | `--env-file` | Reads `MCP_PUBLIC_BASE_URL` / `PRM_RESOURCE_URL` from the service env file. Use `--resource` to override directly. |
@@ -36,6 +37,7 @@ scripts/kc/bootstrap_mcp_host.sh \
 | `--scope-name`, `--mapper-name` | Override generated names (`mcp-<host>-resource` / `mcp-<host>-audience`) when a custom naming convention is needed. |
 | `--trusted-policy-alias` | Target a non-default Trusted Hosts policy if the realm uses multiple policies. |
 | `--verify` | Runs `scripts/kc/status.sh` afterwards to confirm scope IDs, mapper audiences, client assignments, and trusted-host membership. |
+
 
 ## 5. What the script actually does
 1. **Derives host-specific names** by slugifying the MCP hostname so each service gets an isolated scope (`mcp-<host>-resource`) and mapper (`mcp-<host>-audience`).

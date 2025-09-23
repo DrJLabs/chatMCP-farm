@@ -62,6 +62,7 @@ if [[ -z "${RESOURCE}" ]]; then
 fi
 
 initialize_keycloak_client
+require python3
 
 echo "== Ensuring client scope '${SCOPE_NAME}' in realm '${REALM}'"
 SCOPE_ID=$(find_client_scope_id "${REALM}" "${SCOPE_NAME}")
@@ -103,7 +104,7 @@ fi
 
 echo "== Ensuring scope is a realm default"
 DEFAULT_IDS=$(kc_api_json GET "${REALM}/default-default-client-scopes" | jq -r '.[].id')
-if echo "${DEFAULT_IDS}" | grep -q "${SCOPE_ID}"; then
+if echo "${DEFAULT_IDS}" | grep -Fxq "${SCOPE_ID}"; then
   echo "  already present in realm default scopes"
 else
   kc_api_no_content PUT "${REALM}/default-default-client-scopes/${SCOPE_ID}"
@@ -131,7 +132,7 @@ if [[ ${#CLIENTS[@]} -gt 0 ]]; then
         continue
       fi
       ASSIGNED=$(kc_api_json GET "${REALM}/clients/${CLIENT_UUID}/default-client-scopes" | jq -r '.[].id')
-      if echo "${ASSIGNED}" | grep -q "${SCOPE_ID}"; then
+      if echo "${ASSIGNED}" | grep -Fxq "${SCOPE_ID}"; then
         echo "  ${client_id}: already configured"
       else
         kc_api_no_content PUT "${REALM}/clients/${CLIENT_UUID}/default-client-scopes/${SCOPE_ID}"
@@ -163,7 +164,7 @@ else
       | map(tostring)
       | if map(. | ascii_downcase) | index($host | ascii_downcase) then . else . + [$host] end)
   ' )
-  if [[ $(printf '%s' "${UPDATED_COMPONENT}" | jq -r '.config."trusted-hosts" | map(ascii_downcase) | index($host | ascii_downcase)' --arg host "${RESOURCE_HOST}") != "null" ]]; then
+  if [[ $(printf '%s' "${UPDATED_COMPONENT}" | jq -r --arg host "${RESOURCE_HOST}" '.config."trusted-hosts" | map(ascii_downcase) | index($host | ascii_downcase)') != "null" ]]; then
     if [[ "${UPDATED_COMPONENT}" == "${TRUSTED_COMPONENT}" ]]; then
       echo "  policy '${COMPONENT_NAME}' already includes host"
     else

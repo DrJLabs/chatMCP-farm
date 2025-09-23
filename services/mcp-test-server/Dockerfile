@@ -24,6 +24,7 @@ RUN npm run build --workspace services/mcp-test-server
 
 FROM node:24-alpine AS runner
 WORKDIR /app
+ENV NODE_ENV=production
 COPY --from=deps /workspace/package.json ./package.json
 COPY --from=deps /workspace/package-lock.json ./package-lock.json
 COPY services/mcp-test-server/package.json ./services/mcp-test-server/package.json
@@ -32,6 +33,8 @@ COPY --from=deps /workspace/packages/mcp-auth-kit/dist ./packages/mcp-auth-kit/d
 COPY --from=deps /workspace/node_modules ./node_modules
 COPY --from=builder /workspace/services/mcp-test-server/dist ./services/mcp-test-server/dist
 RUN npm prune --omit=dev --workspaces --include-workspace-root && npm cache clean --force
+RUN chown -R node:node /app
 WORKDIR /app/services/mcp-test-server
+USER node
 EXPOSE 8770
 CMD ["node", "dist/server.js"]

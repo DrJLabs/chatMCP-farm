@@ -19,7 +19,7 @@ Options:
   --scope-name <name>         Override the generated client scope name.
   --mapper-name <name>        Override the generated protocol mapper name.
   --attach-client <clientId>  Attach the new scope to a Keycloak client (repeatable).
-  --trusted-policy-alias <name>Trusted Hosts policy alias (default: "${DEFAULT_TRUSTED_ALIAS}").
+  --trusted-policy-alias <name> Trusted Hosts policy alias (default: "${DEFAULT_TRUSTED_ALIAS}").
   --verify                    Run status check after applying changes.
   -h, --help                  Show this help.
 
@@ -39,12 +39,13 @@ RUN_VERIFY=false
 
 add_unique_clients_to_cmd() {
   local -n cmd_array=$1
-  declare -A seen=()
+  local seen=" "
+  local cid
   for cid in "${ATTACH_CLIENTS[@]}"; do
     [[ -z "${cid}" ]] && continue
-    if [[ -z "${seen[${cid}]:-}" ]]; then
+    if [[ "${seen}" != *" ${cid} "* ]]; then
       cmd_array+=("--client" "${cid}")
-      seen["${cid}"]=1
+      seen+=" ${cid} "
     fi
   done
 }
@@ -94,7 +95,7 @@ if [[ -z "${RESOURCE}" ]]; then
   exit 2
 fi
 
-if [[ ${RESOURCE} != http*://* ]]; then
+if [[ ! ${RESOURCE} =~ ^https?:// ]]; then
   echo "error: resource '${RESOURCE}' must include protocol (http/https)" >&2
   exit 2
 fi
@@ -106,9 +107,14 @@ from urllib.parse import urlparse
 url = urlparse(sys.argv[1])
 if not url.scheme or not url.netloc:
     raise SystemExit("invalid resource URL")
-print(url.netloc)
+print(url.hostname or "")
 PY
 "${RESOURCE_CLEAN}")
+
+if [[ -z "${RESOURCE_HOST}" ]]; then
+  echo "error: resource '${RESOURCE_CLEAN}' missing hostname" >&2
+  exit 2
+fi
 
 slugify() {
   python3 - "$1" <<'PY'

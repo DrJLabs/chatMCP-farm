@@ -14,12 +14,14 @@ services:
       REQUIRE_AUTH: ${REQUIRE_AUTH:-true}
       ENABLE_STREAMABLE: ${ENABLE_STREAMABLE:-true}
       ENABLE_SSE: ${ENABLE_SSE:-false}
-      MCP_PUBLIC_BASE_URL: ${MCP_PUBLIC_BASE_URL:-https://mcp-test.onemainarmy.com/mcp}
-      PRM_RESOURCE_URL: ${PRM_RESOURCE_URL:-https://mcp-test.onemainarmy.com/mcp}
+      MCP_PUBLIC_BASE_URL: ${MCP_PUBLIC_BASE_URL:-https://mcp-service.example.com/mcp}
+      PRM_RESOURCE_URL: ${PRM_RESOURCE_URL:-https://mcp-service.example.com/mcp}
       MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-http://127.0.0.1:3333,http://localhost:3333}
       DEBUG_HEADERS: ${DEBUG_HEADERS:-false}
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:${PORT:-8770}/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      test:
+        - CMD-SHELL
+        - "node -e \"const p = process.env.PORT || 8770; const url = 'http://127.0.0.1:' + p + '/healthz'; fetch(url).then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1));\""
       interval: 30s
       timeout: 10s
       retries: 3
@@ -31,15 +33,16 @@ services:
         reservations:
           memory: ${MCP_MEMORY_RESERVATION:-128M}
     networks:
-      - traefik
+      - proxy
     labels:
       - traefik.enable=true
       - traefik.docker.network=${MCP_NETWORK_EXTERNAL:-traefik}
-      - traefik.http.routers.mcp-test-server.rule=Host(`mcp-test.onemainarmy.com`)
+      - traefik.http.routers.mcp-test-server.rule=Host(`${MCP_PUBLIC_HOST:-mcp-service.example.com}`)
       - traefik.http.routers.mcp-test-server.entrypoints=websecure
       - traefik.http.routers.mcp-test-server.tls=true
-      - traefik.http.services.mcp-test-server.loadbalancer.server.port=8770
+      - traefik.http.services.mcp-test-server.loadbalancer.server.port=${PORT:-8770}
 
 networks:
-  traefik:
+  proxy:
     external: true
+    name: ${MCP_NETWORK_EXTERNAL:-traefik}
