@@ -8,16 +8,6 @@ services:
       dockerfile: ${MCP_DOCKERFILE:-services/mcp-test-server/Dockerfile}
     env_file:
       - ./services/mcp-test-server/.env
-    environment:
-      PORT: 8770
-      MCP_BIND_HOST: ${MCP_BIND_HOST:-0.0.0.0}
-      REQUIRE_AUTH: ${REQUIRE_AUTH:-true}
-      ENABLE_STREAMABLE: ${ENABLE_STREAMABLE:-true}
-      ENABLE_SSE: ${ENABLE_SSE:-false}
-      MCP_PUBLIC_BASE_URL: ${MCP_PUBLIC_BASE_URL:-https://mcp-service.example.com/mcp}
-      PRM_RESOURCE_URL: ${PRM_RESOURCE_URL:-https://mcp-service.example.com/mcp}
-      MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-http://127.0.0.1:3333,http://localhost:3333}
-      DEBUG_HEADERS: ${DEBUG_HEADERS:-false}
     healthcheck:
       test:
         - CMD-SHELL

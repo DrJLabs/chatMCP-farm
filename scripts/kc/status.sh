@@ -91,13 +91,18 @@ else
 fi
 
 if [[ ${#CLIENTS[@]} -gt 0 ]]; then
-  seen_clients=" "
   uniq_clients=()
   for cid in "${CLIENTS[@]}"; do
     [[ -z "${cid}" ]] && continue
-    if [[ "${seen_clients}" != *" ${cid} "* ]]; then
+    duplicate=false
+    for existing in "${uniq_clients[@]}"; do
+      if [[ "${existing}" == "${cid}" ]]; then
+        duplicate=true
+        break
+      fi
+    done
+    if [[ ${duplicate} == false ]]; then
       uniq_clients+=("${cid}")
-      seen_clients+=" ${cid} "
     fi
   done
   CLIENTS=("${uniq_clients[@]}")

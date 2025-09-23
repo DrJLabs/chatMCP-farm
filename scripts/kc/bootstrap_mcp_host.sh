@@ -39,13 +39,20 @@ RUN_VERIFY=false
 
 add_unique_clients_to_cmd() {
   local -n cmd_array=$1
-  local seen=" "
-  local cid
+  local -a uniq_clients=()
+  local cid existing duplicate
   for cid in "${ATTACH_CLIENTS[@]}"; do
     [[ -z "${cid}" ]] && continue
-    if [[ "${seen}" != *" ${cid} "* ]]; then
+    duplicate=false
+    for existing in "${uniq_clients[@]}"; do
+      if [[ "${existing}" == "${cid}" ]]; then
+        duplicate=true
+        break
+      fi
+    done
+    if [[ ${duplicate} == false ]]; then
+      uniq_clients+=("${cid}")
       cmd_array+=("--client" "${cid}")
-      seen+=" ${cid} "
     fi
   done
 }
