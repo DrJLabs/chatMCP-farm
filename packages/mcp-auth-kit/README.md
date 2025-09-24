@@ -17,6 +17,12 @@ Reusable TypeScript helpers for securing MCP servers with our shared Keycloak re
 - `src/index.ts` – exports `loadAuthKitOptionsFromEnv` and `createAuthKit`.
 - `package.json` / `tsconfig.json` – build configuration (run `npm run build` before consuming).
 
+## Express 5 + `jose@6` upgrade notes
+
+- Peer dependency now targets `express@^5.1.0`; install Express 5 before wiring the auth kit into a service. The package no longer supports Express 4 type definitions.
+- `jose@^6.1.0` introduces PQC-ready algorithms and requires Node.js 20.19+ (workspace standard is Node 22). Older Node runtimes will fail fast when running the `postbump:test` helper or building the library.
+- After bumping dependencies in a consumer, run `npm run postbump:test` at the workspace root to execute `npm run test --workspaces --if-present` and confirm all services still build and pass their suites.
+
 ## Setup for a new MCP server
 
 1. **Install dependencies**
