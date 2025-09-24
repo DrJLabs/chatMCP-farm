@@ -49,9 +49,39 @@ async function main() {
       throw new Error(`HTTP ${res.status}: ${text}`)
     }
 
-    const data = await res.json()
+    const contentType = res.headers.get('content-type') || ''
     const sessionId = res.headers.get('mcp-session-id') ?? 'missing'
-    console.log('initialize response:', JSON.stringify(data, null, 2))
+    if (contentType.includes('text/event-stream')) {
+      const bodyStream = res.body as ReadableStream<Uint8Array> | null
+      if (!bodyStream) {
+        console.log('initialize stream: no body')
+      } else {
+        const reader = bodyStream.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+        let chunks = 0
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            buffer += decoder.decode(value, { stream: true })
+            chunks += 1
+            if (buffer.includes('\n\n') || chunks >= 5) {
+              break
+            }
+          }
+          buffer += decoder.decode()
+        } finally {
+          await reader.cancel().catch(() => {})
+          reader.releaseLock()
+        }
+        console.log('initialize stream (first chunks):')
+        console.log(buffer)
+      }
+    } else {
+      const data = await res.json()
+      console.log('initialize response:', JSON.stringify(data, null, 2))
+    }
     console.log('accept header sent:', headers.accept)
     console.log('mcp-session-id header:', sessionId)
     const protocolHeader =
