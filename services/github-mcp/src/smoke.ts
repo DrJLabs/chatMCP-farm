@@ -28,7 +28,7 @@ async function main() {
 
   const headers: Record<string, string> = {
     'content-type': 'application/json',
-    accept: process.env.SMOKE_ACCEPT || 'application/json',
+    accept: process.env.SMOKE_ACCEPT || 'application/json, text/event-stream',
   }
   if (token) headers['authorization'] = `Bearer ${token}`
 
@@ -49,9 +49,16 @@ async function main() {
       throw new Error(`HTTP ${res.status}: ${text}`)
     }
 
-    const data = await res.json()
+    const contentType = res.headers.get('content-type') || ''
     const sessionId = res.headers.get('mcp-session-id') ?? 'missing'
-    console.log('initialize response:', JSON.stringify(data, null, 2))
+    if (contentType.includes('text/event-stream')) {
+      const body = await res.text()
+      console.log('initialize stream (event-stream payload):')
+      console.log(body)
+    } else {
+      const data = await res.json()
+      console.log('initialize response:', JSON.stringify(data, null, 2))
+    }
     console.log('accept header sent:', headers.accept)
     console.log('mcp-session-id header:', sessionId)
     const protocolHeader =

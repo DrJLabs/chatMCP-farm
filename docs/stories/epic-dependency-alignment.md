@@ -13,7 +13,8 @@ Upgrade our MCP service stack to the current Express 5 and MCP SDK ecosystem whi
 ### Enhancement Details
 - What's being added/changed: Move first-party services, templates, and shared libraries to Express 5.1.x, latest MCP SDK 1.18.1, Zod 3.24.x, Supertest 7.1.x, Vitest 3.2.x, Typescript 5.6.x, and `@types/node` 22.9.x. Relax `mcp-auth-kit` peers to cover Express 5 and refresh `jose` 5.9.x.
 - How it integrates: Services consume the upgraded dependencies directly, templates inherit the modern defaults for future scaffolds, and `mcp-auth-kit` continues to provide auth middleware without peer warnings. Architecture shards and `.env.example` files are updated to reflect new expectations and smoke workflows.
-- Success criteria: Dependency bumps compile and pass tests on Node 22 and Node 24, Express 5 routing changes are reconciled (middleware signatures, error handlers, async handling), and upgraded Vitest config succeeds with Supertest coverage intact. Architecture/PRD shards document the new baseline and rollback instructions.
+- Delivery approach: Execute the upgrades quickly even if intermediate commits temporarily break workspace parity; maintain clear rollback hashes and converge all services/templates/auth kit as soon as the shared package updates land.
+- Success criteria: Dependency bumps compile and pass tests on Node 22 and Node 24, Express 5 routing changes are reconciled (middleware signatures, error handlers, async handling), and upgraded Vitest config succeeds with Supertest coverage intact. Architecture/PRD shards document the new baseline and rollback instructions once the final alignment is complete.
 
 ## Stories
 - [x] **Story 2.1:** Upgrade `services/mcp-test-server` dependencies to Express 5, SDK 1.18.1, Zod 3.24.x, Supertest 7.1.x, Vitest 3.2.x, and TS toolchain; reconcile router/config changes and restore lint/test parity.
@@ -29,7 +30,7 @@ Upgrade our MCP service stack to the current Express 5 and MCP SDK ecosystem whi
 
 ## Risk Mitigation
 - **Primary Risk:** Express 5 introduces async router semantics and built-in types that may break existing middleware and tests.
-- **Mitigation:** Add targeted integration tests covering auth middleware, error handling, and diagnostics endpoints post-upgrade; audit middleware signatures and ensure TypeScript types compile without relying on deprecated `@types/express` definitions.
+- **Mitigation:** Add targeted integration tests covering auth middleware, error handling, and diagnostics endpoints post-upgrade; audit middleware signatures and ensure TypeScript types compile without relying on deprecated `@types/express` definitions. Accept temporary regressions while transitioning, but document them in story completion notes and follow-ups so they are closed before the epic finishes.
 - **Rollback Plan:** Keep a patch branch with pre-upgrade lockfile; if issues arise, revert service/template package.json changes and republish `mcp-auth-kit` peers, then rerun `npm install` to restore Express 4 stack.
 
 ## Definition of Done
@@ -37,7 +38,8 @@ Upgrade our MCP service stack to the current Express 5 and MCP SDK ecosystem whi
 - [ ] Architecture shard (`docs/architecture/tech-stack.md`) and PRD references updated to call out Express 5 baseline and new testing workflow.
 - [ ] `.env.example`, compose snippets, and README instructions reflect any new scripts or behaviour.
 - [ ] Follow-up items (if any) logged in `docs/stories/follow-ups.md` with owners and target dates.
-- [ ] No regressions observed in smoke tests or workspace lint/test commands.
+- [ ] Any temporary regressions introduced during the accelerated rollout resolved and documented as closed in story completion notes.
+- [ ] No regressions observed in smoke tests or workspace lint/test commands once the alignment is complete.
 
 ## Story Manager Handoff
 "Please draft detailed stories for this focused epic. Ensure each story:
