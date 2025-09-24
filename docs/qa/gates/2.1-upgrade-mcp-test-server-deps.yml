@@ -28,7 +28,7 @@ risk_summary:
       - "Update Vitest config and document CLI usage to avoid coverage regressions"
     monitor:
       - "Validate rollback instructions with recorded lockfile hash/tag"
-      - "Watch TypeScript builds for residual @types/express namespace usage"
+      - "cloud-test.sh now fails CI if express@4 appears in the service tree or if @types/express shows up outside mcp-auth-kit"
 test_design:
   scenarios_total: 7
   by_level:

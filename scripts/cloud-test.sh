@@ -66,8 +66,59 @@ fi
 # 4) Run tests (parity to CLI where possible)
 if [ -d "$W" ]; then
   npm run test:unit -w "$W"
-  if [ -d "$W/tests/integration" ]; then
-    npm run test:integration -w "$W"
-  fi
+  npm run test:integration -w "$W"
   if [ "${ENABLE_E2E:-0}" = "1" ]; then npm test -w "$W" || true; fi
+fi
+
+# 5) Guard against Express 4 regressions (service scope)
+if [ -d "$W" ]; then
+  node - <<'JS'
+const fs = require('fs');
+const path = require('path');
+const pkgPath = path.join('services/mcp-test-server', 'package.json');
+const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+const expected = '^5.1.0';
+const actual = pkg.dependencies?.express;
+if (actual !== expected) {
+  console.error(`ERROR: ${pkgPath} dependencies.express should be ${expected} (found ${actual ?? '<unset>'}).`);
+  process.exit(1);
+}
+JS
+
+  node - <<'JS'
+const { execSync } = require('child_process');
+function listTypes() {
+  try {
+    return execSync('npm ls @types/express --workspace services/mcp-test-server --json', { stdio: ['ignore', 'pipe', 'pipe'] }).toString();
+  } catch (err) {
+    if (err.stdout) return err.stdout.toString();
+    throw err;
+  }
+}
+
+const dataRaw = listTypes();
+if (!dataRaw.trim()) process.exit(0);
+const data = JSON.parse(dataRaw);
+const violations = [];
+
+function visit(node, path = []) {
+  if (!node || !node.dependencies) return;
+  for (const [name, dep] of Object.entries(node.dependencies)) {
+    const nextPath = path.concat(dep.name || name);
+    if (name === '@types/express') {
+      const allowed = path.some(segment => segment.startsWith('mcp-auth-kit'));
+      if (!allowed) {
+        violations.push(nextPath.join(' > '));
+      }
+    }
+    visit(dep, nextPath);
+  }
+}
+
+visit(data);
+if (violations.length > 0) {
+  console.error('ERROR: @types/express detected outside mcp-auth-kit allowlist:\n' + violations.join('\n'));
+  process.exit(1);
+}
+JS
 fi
