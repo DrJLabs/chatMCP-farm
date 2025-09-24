@@ -16,7 +16,8 @@ const MIN_MINOR = 19;
  * @returns {boolean} True if the version is >= MIN_MAJOR.MIN_MINOR, otherwise false.
  */
 function versionIsSupported(versionString) {
-  const [majorStr, minorStr = '0'] = versionString.split('.', 3);
+  const clean = versionString.startsWith('v') ? versionString.slice(1) : versionString;
+  const [majorStr, minorStr = '0'] = clean.split('.', 2);
   const major = Number.parseInt(majorStr, 10);
   const minor = Number.parseInt(minorStr, 10);
   if (Number.isNaN(major) || Number.isNaN(minor)) {
@@ -45,16 +46,20 @@ const extraArgs = process.argv.slice(2);
 const npmBinary = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const result = spawnSync(
   npmBinary,
-  ['run', 'test', '--workspaces', '--if-present', ...extraArgs],
+  ['--workspaces', '--if-present', 'run', 'test', ...extraArgs],
   {
     stdio: 'inherit',
-    env: { ...process.env, NODE_ENV: process.env.NODE_ENV ?? 'test' }
+    env: { ...process.env, NODE_ENV: process.env.NODE_ENV ?? 'test' },
   }
 );
 
 if (result.error) {
   console.error('Failed to execute workspace tests:', result.error.message);
-  process.exit(result.status ?? 1);
+  process.exit(typeof result.status === 'number' ? result.status : 1);
 }
 
-process.exit(result.status ?? 0);
+if (result.signal) {
+  console.error(`Workspace tests terminated by signal: ${result.signal}`);
+}
+
+process.exit(typeof result.status === 'number' ? result.status : 1);
