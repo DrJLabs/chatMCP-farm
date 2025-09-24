@@ -1,13 +1,14 @@
 # __SERVICE_NAME__ service
 
-Baseline MCP service scaffold built on Express, `@modelcontextprotocol/sdk`, and `mcp-auth-kit`. Replace the placeholders in this directory with your implementation details once scaffolded.
+Baseline MCP service scaffold built on Express 5.1, `@modelcontextprotocol/sdk@^1.18.1`, and `mcp-auth-kit`. Replace the placeholders in this directory with your implementation details once scaffolded.
 
 ## What's included
 - Streamable HTTP transport with origin + auth enforcement wired through `mcp-auth-kit`.
 - Deterministic `diagnostics.ping` tool for end-to-end smoke checks.
 - Dockerfile, compose.yml, and `.env.example` aligned with workspace conventions (opt-in compose profile, resource limits, external Traefik network).
-- Vitest suite covering manifest metadata, Accept header handling, and diagnostics payload composition.
-- Smoke script (`npm run smoke`) that exercises the Streamable HTTP endpoint and logs session headers.
+- Vitest 3.2 suite with V8 coverage instrumentation (AST-aware remapping) covering manifest metadata, Accept header handling, and diagnostics payload composition.
+- Smoke script (`npm run smoke`) that exercises the Streamable HTTP endpoint, supports JSON/event-stream responses, and logs session headers.
+- `npm run lint` script (`tsc --noEmit`) to keep TypeScript output aligned with the Express 5 baseline.
 
 ## Environment setup
 1. Copy `.env.example` to `.env` and update the placeholders (issuer, audience, resource URL, allowed origins).
@@ -27,6 +28,21 @@ COMPOSE_PROFILES=__SERVICE_NAME__ ./scripts/compose.sh up --build
 - Ensure the external network referenced by `.env` exists beforehand: `docker network inspect ${MCP_NETWORK_EXTERNAL:-traefik} || docker network create ${MCP_NETWORK_EXTERNAL:-traefik}`.
 - Health endpoint: `GET http://127.0.0.1:8770/healthz`.
 - Tear down with `./scripts/compose.sh --profile __SERVICE_NAME__ down --remove-orphans` when finished.
+
+After scaffolding a new service, run the baseline verification sequence and capture the output for the Dev Agent Record:
+
+```bash
+npm install --workspace services/__SERVICE_NAME__
+npm run lint --workspace services/__SERVICE_NAME__
+npm run test --workspace services/__SERVICE_NAME__ -- --coverage
+npm run build --workspace services/__SERVICE_NAME__
+npm run smoke --workspace services/__SERVICE_NAME__
+npm run postbump:test
+npm ls express --workspace services/__SERVICE_NAME__
+npm ls @types/express --workspace services/__SERVICE_NAME__
+```
+
+These commands confirm the Express 5 runtime and type dependency trees, enforce lint/test/build parity, exercise the smoke script, and verify the workspace-wide `postbump:test` helper.
 
 ## Manual verification
 ```bash
@@ -63,7 +79,7 @@ curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
    MCP_BASE_URL=http://127.0.0.1:8770/mcp MCP_ACCESS_TOKEN="$ACCESS_TOKEN" npm run smoke --workspace __SERVICE_NAME__
    ```
 
-Collect the aggregated output in change reviews to demonstrate end-to-end readiness.
+Collect the aggregated output (including coverage summary and `npm ls express` tree) in change reviews to demonstrate end-to-end readiness.
 
 ## Keycloak notes
 - Create a confidential client with service-account enabled using the local Keycloak admin (default [http://127.0.0.1:5050/auth](http://127.0.0.1:5050/auth)).

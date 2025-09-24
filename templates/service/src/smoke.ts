@@ -5,14 +5,10 @@ const protocol = process.env.MCP_PROTOCOL_VERSION || '2025-06-18'
 /**
  * Performs a JSON-RPC "initialize" smoke test against the configured MCP endpoint.
  *
- * Sends a POST with an `initialize` payload (protocolVersion 2025-06-18, capabilities, and clientInfo)
- * to the base MCP URL. Uses SMOKE_TIMEOUT_MS (default 10000 ms) to abort the request via AbortController.
- * If an access token is available it is sent as a Bearer Authorization header. On success the parsed
- * response is logged along with the Accept header sent and any MCP diagnostic headers (`mcp-session-id`,
- * `mcp-protocol-version`).
+ * Sends an `initialize` request, logs the response (or event-stream payload), the Accept header sent,
+ * the `mcp-session-id` header, and the `mcp-protocol-version` header if present.
  *
- * @returns A promise that resolves when the request completes and logging is finished.
- * @throws Error If the HTTP response has a non-OK status; the thrown message includes the status and response body.
+ * @throws Error If the HTTP response has a non-OK status; the error message includes the status and response body.
  */
 async function main() {
   const payload = {
@@ -28,7 +24,7 @@ async function main() {
 
   const headers: Record<string, string> = {
     'content-type': 'application/json',
-    accept: process.env.SMOKE_ACCEPT || 'application/json',
+    accept: process.env.SMOKE_ACCEPT || 'application/json, text/event-stream',
   }
   if (token) headers['authorization'] = `Bearer ${token}`
 
@@ -49,13 +45,24 @@ async function main() {
       throw new Error(`HTTP ${res.status}: ${text}`)
     }
 
-    const data = await res.json()
+    const contentType = res.headers.get('content-type') || ''
     const sessionId = res.headers.get('mcp-session-id') ?? 'missing'
-    console.log('initialize response:', JSON.stringify(data, null, 2))
+    if (contentType.includes('text/event-stream')) {
+      const reader = res.body?.getReader()
+      if (!reader) throw new Error('event-stream response missing readable body')
+      const decoder = new TextDecoder()
+      const { value } = await reader.read()
+      const preview = decoder.decode(value ?? new Uint8Array(), { stream: true })
+      await reader.cancel()
+      console.log('initialize stream (event-stream payload preview):')
+      console.log(preview || '[no data before stream cancelled]')
+    } else {
+      const bodyPayload = await res.json()
+      console.log('initialize response:', JSON.stringify(bodyPayload, null, 2))
+    }
     console.log('accept header sent:', headers.accept)
     console.log('mcp-session-id header:', sessionId)
-    const protocolHeader =
-      res.headers.get('mcp-protocol-version') ?? res.headers.get('MCP-Protocol-Version')
+    const protocolHeader = res.headers.get('mcp-protocol-version')
     if (protocolHeader) {
       console.log('mcp-protocol-version header:', protocolHeader)
     }

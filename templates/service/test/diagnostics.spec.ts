@@ -42,6 +42,49 @@ describe('diagnostics.ping payload', () => {
     expect(payload.token?.scopes).toEqual(['mcp:tools'])
     expect(payload.timestamp).toBeTypeOf('string')
   })
+
+  it('falls back gracefully when JWT decoding fails and derives userId from auth extras', () => {
+    const extra: any = {
+      authInfo: {
+        token: 'malformed-token',
+        clientId: 'client-zzz',
+        extra: { userId: 'user-456' },
+      },
+      requestInfo: {
+        headers: {
+          referer: 'https://chat.openai.com',
+        },
+      },
+    }
+
+    const payload = buildDiagnosticsPayload(undefined, extra, { allowedOrigins: ['https://chat.openai.com'] })
+
+    expect(payload.token?.subject).toBeUndefined()
+    expect(payload.token?.audiences).toBeUndefined()
+    expect(payload.userId).toBe('user-456')
+    expect(payload.origin).toBe('https://chat.openai.com')
+  })
+
+  it('pulls basic rate limit headers from plain header bags case-insensitively', () => {
+    const resetSeconds = Math.floor(Date.now() / 1000) + 30
+    const extra: any = {
+      requestInfo: {
+        headers: {
+          'X-RateLimit-Limit': '1000',
+          'X-RateLimit-Remaining': '999',
+          'X-RateLimit-Reset': `${resetSeconds}`,
+          'Retry-After': '5',
+        },
+      },
+    }
+
+    const payload = buildDiagnosticsPayload(undefined, extra, { allowedOrigins: [] })
+
+    expect(payload.rateLimit?.limit).toBe(1000)
+    expect(payload.rateLimit?.remaining).toBe(999)
+    expect(payload.rateLimit?.retryAfter).toBe('5')
+    expect(payload.rateLimit?.resetAt).toBeTypeOf('string')
+  })
 })
 
 describe('diagnostics tool metadata', () => {
