@@ -101,6 +101,13 @@ Created services/${SERVICE_NAME}.
 Next steps:
   1. Copy services/${SERVICE_NAME}/.env.example to .env and set resource URLs + issuer.
   2. Update services/${SERVICE_NAME}/README.md and src/mcp.ts with real tools.
-  3. Run npm install --workspace services/${SERVICE_NAME} and npm run build --workspace services/${SERVICE_NAME}.
+  3. Run the Express 5 baseline workflow:
+       npm install --workspace services/${SERVICE_NAME}
+       npm run lint --workspace services/${SERVICE_NAME}
+       npm run test -- --coverage --workspace services/${SERVICE_NAME}
+       npm run build --workspace services/${SERVICE_NAME}
+       npm run smoke --workspace services/${SERVICE_NAME}
+       npm run postbump:test
+       npm ls express --workspace services/${SERVICE_NAME}
   4. Add the service to docker-compose.yml (templates/service/compose.yml shows labels).
 NOTE

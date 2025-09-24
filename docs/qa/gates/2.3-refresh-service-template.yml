@@ -1,0 +1,71 @@
+# Generated from qa-gate-template-v1
+schema: 1
+story: "2.3"
+story_title: "Refresh Service Template for Express 5 Baseline"
+gate: "PASS"
+status_reason: "Template now matches the Express 5 / Vitest 3 baseline; bootstrap workflow, documentation, and postbump helper evidence all verified with no residual peer warnings."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-24T22:45:00Z"
+waiver:
+  active: false
+  notes: null
+  expires: null
+  owner: null
+  scope: null
+top_issues:
+  - id: PERF-001
+    description: "Vitest V8 coverage adds ~1.3s per scaffold; continue monitoring as additional services adopt the template."
+    resolution: "Track CI timing post-rollout and fall back to lighter reporters if runtime regresses beyond Story 2.2 baseline."
+risk_summary:
+  totals:
+    critical: 0
+    high: 1
+    medium: 2
+    low: 1
+  highest:
+    id: TECH-001
+    score: 6
+    title: "Template dependency matrix drifting from Express 5 baseline"
+  recommendations:
+    must_fix:
+      - "Keep template `package.json` and configs diffed against `services/mcp-test-server` before release."
+      - "Retain `npm ls express --workspace <scaffold>` evidence in Dev Agent Record for each template refresh."
+    monitor:
+      - "Benchmark Vitest coverage runtime as more scaffolds adopt V8 AST-aware remapping."
+      - "Re-run smoke after mcp-auth-kit updates to confirm guard ordering remains intact."
+
+test_design:
+  scenarios_total: 7
+  by_level:
+    unit: 2
+    integration: 4
+    e2e: 1
+  by_priority:
+    p0: 4
+    p1: 3
+    p2: 0
+    p3: 0
+  coverage_gaps: []
+trace:
+  totals:
+    requirements: 4
+    full: 4
+    partial: 0
+    none: 0
+  planning_ref: 'docs/qa/assessments/2.3-test-design-20250924.md'
+  uncovered: []
+  notes: 'docs/qa/assessments/2.3-risk-20250924.md'
+nfr_validation:
+  _assessed: [security, performance, reliability, maintainability]
+  security:
+    status: PASS
+    notes: 'Supertest suite and smoke checks confirm `mcp-auth-kit` guard behavior on Express 5; no new warnings introduced.'
+  performance:
+    status: PASS
+    notes: 'Vitest 3.2 V8 coverage executes in ~1.3s; keep monitoring as scaffolds scale.'
+  reliability:
+    status: PASS
+    notes: 'Bootstrap commands and postbump helper succeed on Node 22 with captured evidence.'
+  maintainability:
+    status: PASS
+    notes: 'Docs, lint script, and coverage thresholds stay in sync with workspace standards; coverage >85% lines. '

@@ -60,6 +60,12 @@ export interface DiagnosticsMetadata {
   }
   origin?: string | null
   userId?: string | null
+  rateLimit?: {
+    limit?: number
+    remaining?: number
+    resetAt?: string
+    retryAfter?: string
+  }
 }
 
 export const diagnosticsToolMetadata = {
@@ -128,11 +134,17 @@ function getHeader(
     return ((headers as Headers).get(name) ?? null) as string | null
   }
   const bag = headers as HeaderBag
-  const candidate = bag[name] ?? bag[name.toLowerCase()]
-  if (Array.isArray(candidate)) {
-    return candidate[0] ?? null
+  const target = name.toLowerCase()
+  for (const key of Object.keys(bag)) {
+    if (key === name || key.toLowerCase() === target) {
+      const candidate = bag[key]
+      if (Array.isArray(candidate)) {
+        return candidate[0] ?? null
+      }
+      return candidate ?? null
+    }
   }
-  return candidate ?? null
+  return null
 }
 
 /**
@@ -200,5 +212,38 @@ export function buildDiagnosticsPayload(
     getHeader(extra.requestInfo?.headers, 'origin') ?? getHeader(extra.requestInfo?.headers, 'referer')
   metadata.origin = originHeader
 
+  const rateLimit = extractRateLimit(extra.requestInfo?.headers)
+  if (rateLimit) {
+    metadata.rateLimit = rateLimit
+  }
+
   return metadata
+}
+
+function extractRateLimit(headers: DiagnosticsRequestInfo['headers'] | undefined) {
+  const limit = getHeader(headers, 'x-ratelimit-limit')
+  const remaining = getHeader(headers, 'x-ratelimit-remaining')
+  const reset = getHeader(headers, 'x-ratelimit-reset')
+  const retryAfter = getHeader(headers, 'retry-after')
+
+  if (!limit && !remaining && !reset && !retryAfter) return undefined
+
+  const toNumber = (value: string | null) => {
+    if (!value) return undefined
+    const parsed = Number.parseInt(value, 10)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+
+  const parsedLimit = toNumber(limit)
+  const parsedRemaining = toNumber(remaining)
+  const resetNumber = toNumber(reset)
+
+  const resetAt = resetNumber !== undefined ? new Date(resetNumber * 1000).toISOString() : undefined
+
+  return {
+    limit: parsedLimit,
+    remaining: parsedRemaining,
+    resetAt,
+    retryAfter: retryAfter ?? undefined,
+  }
 }

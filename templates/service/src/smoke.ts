@@ -28,7 +28,7 @@ async function main() {
 
   const headers: Record<string, string> = {
     'content-type': 'application/json',
-    accept: process.env.SMOKE_ACCEPT || 'application/json',
+    accept: process.env.SMOKE_ACCEPT || 'application/json, text/event-stream',
   }
   if (token) headers['authorization'] = `Bearer ${token}`
 
@@ -49,13 +49,18 @@ async function main() {
       throw new Error(`HTTP ${res.status}: ${text}`)
     }
 
-    const data = await res.json()
+    const contentType = res.headers.get('content-type') || ''
+    const bodyPayload = contentType.includes('text/event-stream') ? await res.text() : await res.json()
     const sessionId = res.headers.get('mcp-session-id') ?? 'missing'
-    console.log('initialize response:', JSON.stringify(data, null, 2))
+    if (typeof bodyPayload === 'string') {
+      console.log('initialize stream (event-stream payload):')
+      console.log(bodyPayload)
+    } else {
+      console.log('initialize response:', JSON.stringify(bodyPayload, null, 2))
+    }
     console.log('accept header sent:', headers.accept)
     console.log('mcp-session-id header:', sessionId)
-    const protocolHeader =
-      res.headers.get('mcp-protocol-version') ?? res.headers.get('MCP-Protocol-Version')
+    const protocolHeader = res.headers.get('mcp-protocol-version') ?? res.headers.get('MCP-Protocol-Version')
     if (protocolHeader) {
       console.log('mcp-protocol-version header:', protocolHeader)
     }
