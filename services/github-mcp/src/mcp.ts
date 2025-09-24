@@ -70,7 +70,7 @@ export const diagnosticsToolMetadata = {
 
 export async function buildMcpServer(options: BuildMcpServerOptions) {
   const server = new McpServer({
-    name: process.env.MCP_SERVER_NAME || '__SERVICE_NAME__',
+    name: process.env.MCP_SERVER_NAME || 'github-mcp',
     version: process.env.MCP_SERVER_VERSION || '0.1.0',
   })
 

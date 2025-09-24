@@ -63,7 +63,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     })
   })
 
-  app.get('/healthz', (_req, res) => res.json({ ok: true, service: '__SERVICE_NAME__' }))
+  app.get('/healthz', (_req, res) => res.json({ ok: true, service: 'github-mcp' }))
 
   const mcpServer = await buildMcpServer({ allowedOrigins: authKit.config.allowedOrigins })
 

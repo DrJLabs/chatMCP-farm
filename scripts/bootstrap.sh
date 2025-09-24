@@ -56,11 +56,42 @@ for path in dest.rglob('*'):
         path.write_text(text)
 PY
 
+BOOTSTRAP_SERVICE_NAME="${SERVICE_NAME}" ROOT_DIR="${ROOT_DIR}" python3 - <<'PY'
+import json
+import os
+from pathlib import Path
+service = os.environ['BOOTSTRAP_SERVICE_NAME']
+root = Path(os.environ['ROOT_DIR'])
+pkg_path = root / 'package.json'
+if pkg_path.exists():
+    data = json.loads(pkg_path.read_text())
+    workspaces = data.get('workspaces')
+    changed = False
+    entry = f'services/{service}'
+    if isinstance(workspaces, list):
+        if entry not in workspaces:
+            workspaces.append(entry)
+            changed = True
+    elif isinstance(workspaces, dict):
+        packages = workspaces.setdefault('packages', [])
+        if entry not in packages:
+            packages.append(entry)
+            changed = True
+    elif workspaces is None:
+        data['workspaces'] = [entry]
+        changed = True
+    else:
+        data['workspaces'] = [workspaces, entry]
+        changed = True
+    if changed:
+        pkg_path.write_text(json.dumps(data, indent=2) + '\n')
+PY
+
 cat <<NOTE
 Created services/${SERVICE_NAME}.
 Next steps:
   1. Copy services/${SERVICE_NAME}/.env.example to .env and set resource URLs + issuer.
   2. Update services/${SERVICE_NAME}/README.md and src/mcp.ts with real tools.
   3. Run npm install --workspace services/${SERVICE_NAME} and npm run build --workspace services/${SERVICE_NAME}.
-  4. Add the service to docker-compose.yml (templates/service/compose.snippet.yml shows labels).
+  4. Add the service to docker-compose.yml (templates/service/compose.yml shows labels).
 NOTE

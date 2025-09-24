@@ -7,6 +7,6 @@ const port = envConfig.PORT
 
 app.listen(port, bindHost, () => {
   console.log(
-    `__SERVICE_NAME__ listening on ${bindHost}:${port} (allowed origins: ${envConfig.MCP_ALLOWED_ORIGINS || 'none'})`,
+    `github-mcp listening on ${bindHost}:${port} (allowed origins: ${envConfig.MCP_ALLOWED_ORIGINS || 'none'})`,
   )
 })

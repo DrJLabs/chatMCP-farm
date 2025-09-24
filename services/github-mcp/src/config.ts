@@ -5,7 +5,7 @@ const EnvSchema = z.object({
   MCP_BIND_HOST: z.string().min(1).default('0.0.0.0'),
   OIDC_ISSUER: z.string().url('OIDC_ISSUER must be a valid URL'),
   OIDC_AUDIENCE: z.string().min(1, 'OIDC_AUDIENCE is required'),
-  MCP_PUBLIC_BASE_URL: z.string().url().default('https://__SERVICE_NAME__.local/mcp'),
+  MCP_PUBLIC_BASE_URL: z.string().url().default('https://github-mcp.local/mcp'),
   PRM_RESOURCE_URL: z.string().url().optional(),
   MCP_ALLOWED_ORIGINS: z
     .string()
@@ -58,15 +58,15 @@ export function buildAuthEnv(config: ServiceEnvConfig, env: NodeJS.ProcessEnv = 
 function normalizeServiceEnv(env: NodeJS.ProcessEnv) {
   const source = { ...env }
 
-  copyIfPresent(source, '__SERVICE_ENV_PREFIX___PORT', 'PORT')
-  copyIfPresent(source, '__SERVICE_ENV_PREFIX___BIND_HOST', 'MCP_BIND_HOST')
-  copyIfPresent(source, '__SERVICE_ENV_PREFIX___PUBLIC_BASE_URL', 'MCP_PUBLIC_BASE_URL')
-  copyIfPresent(source, '__SERVICE_ENV_PREFIX___PRM_URL', 'PRM_RESOURCE_URL')
-  copyIfPresent(source, '__SERVICE_ENV_PREFIX___ALLOWED_ORIGINS', 'MCP_ALLOWED_ORIGINS')
-  copyIfPresent(source, '__SERVICE_ENV_PREFIX___REQUIRE_AUTH', 'REQUIRE_AUTH')
-  copyIfPresent(source, '__SERVICE_ENV_PREFIX___ENABLE_STREAMABLE', 'ENABLE_STREAMABLE')
-  copyIfPresent(source, '__SERVICE_ENV_PREFIX___ENABLE_SSE', 'ENABLE_SSE')
-  copyIfPresent(source, '__SERVICE_ENV_PREFIX___DEBUG_HEADERS', 'DEBUG_HEADERS')
+  copyIfPresent(source, 'GITHUB_MCP_PORT', 'PORT')
+  copyIfPresent(source, 'GITHUB_MCP_BIND_HOST', 'MCP_BIND_HOST')
+  copyIfPresent(source, 'GITHUB_MCP_PUBLIC_BASE_URL', 'MCP_PUBLIC_BASE_URL')
+  copyIfPresent(source, 'GITHUB_MCP_PRM_URL', 'PRM_RESOURCE_URL')
+  copyIfPresent(source, 'GITHUB_MCP_ALLOWED_ORIGINS', 'MCP_ALLOWED_ORIGINS')
+  copyIfPresent(source, 'GITHUB_MCP_REQUIRE_AUTH', 'REQUIRE_AUTH')
+  copyIfPresent(source, 'GITHUB_MCP_ENABLE_STREAMABLE', 'ENABLE_STREAMABLE')
+  copyIfPresent(source, 'GITHUB_MCP_ENABLE_SSE', 'ENABLE_SSE')
+  copyIfPresent(source, 'GITHUB_MCP_DEBUG_HEADERS', 'DEBUG_HEADERS')
 
   return source
 }
