@@ -18,15 +18,15 @@ Upgrade our MCP service stack to the current Express 5 and MCP SDK ecosystem whi
 
 ## Stories
 - [x] **Story 2.1:** Upgrade `services/mcp-test-server` dependencies to Express 5, SDK 1.18.1, Zod 3.24.x, Supertest 7.1.x, Vitest 3.2.x, and TS toolchain; reconcile router/config changes and restore lint/test parity.
-- [ ] **Story 2.2:** Mirror the dependency upgrades in `services/github-mcp`, adjust tests for Express 5 differences, and verify smoke tooling remains stable.
-- [x] **Story 2.3:** Refresh `templates/service` so newly bootstrapped services inherit Express 5 defaults, Vitest 3 config, and updated `.env` + compose fragments. *(May be sequenced after Story 2.4 if auth-kit peers need to land first; document skip in story notes.)*
-- [ ] **Story 2.4:** Update `packages/mcp-auth-kit` peer ranges and `jose` patch level, publish migration notes, and add workspace-wide post-bump script (`npm run test --workspaces` helper) plus documentation updates (tech stack, coding standards references, rollback guidance).
+- [x] **Story 2.2:** Mirror the dependency upgrades in `services/github-mcp`, adjust tests for Express 5 differences, and verify smoke tooling remains stable.
+- [x] **Story 2.3:** Refresh `templates/service` so newly bootstrapped services inherit Express 5 defaults, Vitest 3 config, and updated `.env` + compose fragments. *(Sequenced after Story 2.4 landed to clear auth-kit peers.)*
+- [x] **Story 2.4:** Update `packages/mcp-auth-kit` peer ranges and `jose` patch level, publish migration notes, and add workspace-wide post-bump script (`npm run test --workspaces` helper) plus documentation updates (tech stack, coding standards references, rollback guidance).
 
 ## Compatibility Requirements
-- [ ] Node engine range remains `^22 || ^24`; no changes to runtime expectations for consumers.
-- [ ] Streamable HTTP transport contracts exposed by services remain backward compatible.
-- [ ] Template outputs continue to match current scaffold expectations (Dockerfile, compose snippets, lint/test scripts).
-- [ ] Shared auth flows (`mcp-auth-kit`) remain API-compatible with existing services.
+- [x] Node engine range remains `^22 || ^24`; the upgraded services, template, and auth kit explicitly enforce this engine span.
+- [x] Streamable HTTP transport contracts exposed by services remain backward compatible (diagnostics and `/mcp` endpoints exercised via smoke suites post-upgrade).
+- [x] Template outputs continue to match current scaffold expectations (Dockerfile, compose snippets, lint/test scripts) following Story 2.3 validation.
+- [x] Shared auth flows (`mcp-auth-kit`) remain API-compatible with existing services (Story 2.4 QA gate confirmed guard behaviour).
 
 ## Risk Mitigation
 - **Primary Risk:** Express 5 introduces async router semantics and built-in types that may break existing middleware and tests.
@@ -34,10 +34,10 @@ Upgrade our MCP service stack to the current Express 5 and MCP SDK ecosystem whi
 - **Rollback Plan:** Keep a patch branch with pre-upgrade lockfile; if issues arise, revert service/template package.json changes and republish `mcp-auth-kit` peers, then rerun `npm install` to restore Express 4 stack.
 
 ## Definition of Done
-- [ ] All four stories completed with acceptance criteria validated via Vitest 3 + Supertest suites on Node 22.
-- [ ] Architecture shard (`docs/architecture/tech-stack.md`) and PRD references updated to call out Express 5 baseline and new testing workflow.
-- [ ] `.env.example`, compose snippets, and README instructions reflect any new scripts or behaviour.
-- [ ] Follow-up items (if any) logged in `docs/stories/follow-ups.md` with owners and target dates.
+- [x] All four stories completed with acceptance criteria validated via Vitest 3 + Supertest suites on Node 22 (see individual QA gates 2.1–2.4).
+- [x] Architecture shard (`docs/architecture/tech-stack.md`) and PRD references updated to call out Express 5 baseline and new testing workflow.
+- [x] `.env.example`, compose snippets, and README instructions reflect the new scripts/behaviour across services, template, and auth kit.
+- [x] Follow-up items logged in `docs/stories/follow-ups.md` with outstanding entries (Express 5 peers now closed under Story 2.4; remaining items unrelated to this epic).
 - [ ] Any temporary regressions introduced during the accelerated rollout resolved and documented as closed in story completion notes.
 - [ ] No regressions observed in smoke tests or workspace lint/test commands once the alignment is complete.
 

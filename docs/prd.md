@@ -51,7 +51,7 @@ The `chat-mcp-farm` repository was split from a larger monorepo to focus on host
 
 ## 3. Technical Assumptions
 - **Languages & Runtime:** TypeScript targeting Node.js 24.x (pre-LTS with October 2025 promotion expected); ESM output with strict typing, TSConfig shared via `tsconfig.base.json`.
-- **Frameworks & Libraries:** Express 4 for HTTP handling, `@modelcontextprotocol/sdk` for MCP transports, `zod` for tool schema validation, `morgan` for logging.
+- **Frameworks & Libraries:** Express 5.1.x for HTTP handling, `@modelcontextprotocol/sdk@^1.18.1` for MCP transports, `zod@^3.24` for tool schema validation, `morgan@^1.10` for logging.
 - **Package Manager:** npm workspaces (monorepo). pnpm/Nx considered later if performance requires.
 - **Repository Structure:** Monorepo containing `packages/` for shared libs, `services/` for deployable MCP servers, `templates/` for scaffolding, `scripts/` for automation, `docs/` for operator guides.
 - **Deployment:** Containerized via Docker images orchestrated behind Traefik/Cloudflare, authenticated through shared Keycloak realm (`OMA`).
@@ -77,7 +77,7 @@ The `chat-mcp-farm` repository was split from a larger monorepo to focus on host
   - `/debug/config`, `/debug/oidc` – diagnostics for issuers, JWKS, and config.
   - `/healthz` – readiness probe.
 - **MCP Tools:** `ping`, `search`, `fetch`, `write`, `om.search`, `om.add`.
-- **CLI/Automation:** `scripts/kc/*.sh` manage Keycloak scopes, trusted hosts, and status; `scripts/bootstrap.sh` scaffolds services from templates; `scripts/compose.sh` aggregates per-service docker configurations; `scripts/render-docs.mjs` renders configuration-aware docs.
+- **CLI/Automation:** `scripts/kc/*.sh` manage Keycloak scopes, trusted hosts, and status; `scripts/bootstrap.sh` scaffolds services from templates; `scripts/compose.sh` aggregates per-service docker configurations; `scripts/render-docs.mjs` renders configuration-aware docs; root `npm run postbump:test` exercises all workspaces after dependency updates.
 
 ---
 
@@ -126,7 +126,7 @@ The `chat-mcp-farm` repository was split from a larger monorepo to focus on host
 ---
 
 ## 11. Release Strategy
-1. Harden workspace scripts and ensure `npm run lint|test|build` succeeds across packages.
+1. Harden workspace scripts and ensure `npm run lint|test|build` plus `npm run postbump:test` succeed across packages on Node 22/24.
 2. Stabilize `mcp-auth-kit` and publish using npm dist-tag or internal registry.
 3. Finalize MCP test server defaults and document environment variables.
 4. Implement CI pipeline (lint/test build) and container publishing.
