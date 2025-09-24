@@ -117,7 +117,7 @@ export async function buildMcpServer(options: BuildMcpServerOptions) {
  * Retrieve a header value by name from either a Headers instance or a HeaderBag.
  *
  * Accepts either a Fetch `Headers`-compatible object or a plain header bag (Record<string, string | string[]>).
- * For array values, the first element is returned. Name lookups try the exact key then the lowercased key.
+ * For array values, the first element is returned. Name lookups are case-insensitive for plain header bags.
  *
  * @param headers - A Headers instance or a header bag (may be undefined)
  * @param name - Header name to look up
@@ -132,11 +132,17 @@ function getHeader(
     return ((headers as Headers).get(name) ?? null) as string | null
   }
   const bag = headers as HeaderBag
-  const candidate = bag[name] ?? bag[name.toLowerCase()]
-  if (Array.isArray(candidate)) {
-    return candidate[0] ?? null
+  const target = name.toLowerCase()
+  for (const key of Object.keys(bag)) {
+    if (key === name || key.toLowerCase() === target) {
+      const candidate = bag[key]
+      if (Array.isArray(candidate)) {
+        return candidate[0] ?? null
+      }
+      return candidate ?? null
+    }
   }
-  return candidate ?? null
+  return null
 }
 
 /**
@@ -224,16 +230,9 @@ function extractRateLimit(headers: DiagnosticsRequestInfo['headers'] | undefined
 
   const parsedLimit = toNumber(limit)
   const parsedRemaining = toNumber(remaining)
+  const resetNumber = toNumber(reset)
 
-  let resetAt: string | undefined
-  if (reset) {
-    const resetNumber = toNumber(reset)
-    if (resetNumber !== undefined) {
-      resetAt = new Date(resetNumber * 1000).toISOString()
-    } else {
-      resetAt = reset
-    }
-  }
+  const resetAt = resetNumber !== undefined ? new Date(resetNumber * 1000).toISOString() : undefined
 
   return {
     limit: parsedLimit,

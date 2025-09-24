@@ -28,7 +28,7 @@ async function main() {
 
   const headers: Record<string, string> = {
     'content-type': 'application/json',
-    accept: process.env.SMOKE_ACCEPT || 'application/json, text/event-stream',
+    accept: process.env.SMOKE_ACCEPT || 'application/json',
   }
   if (token) headers['authorization'] = `Bearer ${token}`
 
@@ -52,9 +52,32 @@ async function main() {
     const contentType = res.headers.get('content-type') || ''
     const sessionId = res.headers.get('mcp-session-id') ?? 'missing'
     if (contentType.includes('text/event-stream')) {
-      const body = await res.text()
-      console.log('initialize stream (event-stream payload):')
-      console.log(body)
+      const bodyStream = res.body as ReadableStream<Uint8Array> | null
+      if (!bodyStream) {
+        console.log('initialize stream: no body')
+      } else {
+        const reader = bodyStream.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+        let chunks = 0
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            buffer += decoder.decode(value, { stream: true })
+            chunks += 1
+            if (buffer.includes('\n\n') || chunks >= 5) {
+              break
+            }
+          }
+          buffer += decoder.decode()
+        } finally {
+          await reader.cancel().catch(() => {})
+          reader.releaseLock()
+        }
+        console.log('initialize stream (first chunks):')
+        console.log(buffer)
+      }
     } else {
       const data = await res.json()
       console.log('initialize response:', JSON.stringify(data, null, 2))

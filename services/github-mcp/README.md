@@ -89,4 +89,4 @@ Vitest coverage uses the V8 provider. Coverage reports are written to `services/
 - Update `src/mcp.ts` with real tools, resources, and storage as your service evolves.
 - Adjust the compose.yml ports/labels to match your deployment topology.
 - Extend the Vitest suite with service-specific assertions.
- - Coordinate with Story 2.4 to remove temporary Express 4 peer warnings emitted by `mcp-auth-kit`; during the transition these warnings are acceptable but must be documented in change notes.
+- Coordinate with Story 2.4 to remove temporary Express 4 peer warnings emitted by `mcp-auth-kit`; during the transition these warnings are acceptable but must be documented in change notes.
