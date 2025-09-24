@@ -16,6 +16,17 @@ export interface CreateAppOptions {
   env?: NodeJS.ProcessEnv
 }
 
+/**
+ * Create and configure the Express application for the MCP service.
+ *
+ * Builds runtime configuration and an AuthKit context from environment variables, mounts request logging,
+ * CORS/origin checks, OAuth-protected endpoints, a manifest endpoint, health check, and the MCP endpoints
+ * that manage StreamableHTTPServerTransport sessions. Also initializes an MCP server instance and tracks
+ * per-session transports.
+ *
+ * @param options - Optional overrides (e.g., a custom `env` object) used to load configuration.
+ * @returns An object containing the configured Express app, the loaded service environment config, and the AuthKit context.
+ */
 export async function createApp(options: CreateAppOptions = {}): Promise<CreateAppResult> {
   const envSource = options.env ?? process.env
   const envConfig = loadServiceEnvConfig(envSource)
@@ -165,6 +176,19 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   return { app, envConfig, authKit }
 }
 
+/**
+ * Creates an Express request handler that serves the MCP service manifest JSON.
+ *
+ * The returned handler responds with a manifest describing schema version, human/model
+ * names and descriptions (with defaults), auth metadata when authentication is required,
+ * available endpoints and capabilities, tools metadata, resource and allowed origins,
+ * and optional redacted request headers when debugHeaders is enabled.
+ *
+ * If `authKit.config.requireAuth` is true the handler will set the authentication
+ * challenge headers on the response before sending the manifest.
+ *
+ * @returns An Express request handler (req, res) => void that serializes the manifest to JSON.
+ */
 function buildManifestHandler(authKit: AuthKitContext) {
   const fallbackName = 'MCP Service'
   const fallbackModelName = 'mcp_service'
@@ -211,11 +235,24 @@ function buildManifestHandler(authKit: AuthKitContext) {
   }
 }
 
+/**
+ * Returns the list of public MCP HTTP endpoints exposed by this service.
+ *
+ * @returns An array of endpoint paths (currently only `'/mcp'`).
+ */
 function buildEndpointsList(authKit: AuthKitContext) {
   const endpoints = ['/mcp']
   return endpoints
 }
 
+/**
+ * Redacts sensitive HTTP headers from a headers object.
+ *
+ * Replaces values of 'authorization', 'cookie', and 'proxy-authorization' (case-insensitive) with `'<redacted>'`.
+ *
+ * @param headers - Incoming request headers to redact.
+ * @returns A shallow-cloned headers object with sensitive header values replaced by `'<redacted>'`.
+ */
 function redactHeaders(headers: Request['headers']) {
   const clone: Record<string, unknown> = { ...headers };
   const headersToRedact = ['authorization', 'cookie', 'proxy-authorization'];

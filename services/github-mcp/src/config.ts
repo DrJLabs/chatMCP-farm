@@ -30,11 +30,29 @@ const EnvSchema = z.object({
 
 export type ServiceEnvConfig = z.infer<typeof EnvSchema>
 
+/**
+ * Normalize the provided environment and parse it into a validated ServiceEnvConfig.
+ *
+ * The input environment is first normalized (legacy keys mapped to current keys) and then
+ * validated/coerced against the EnvSchema. Returns a fully typed configuration object.
+ *
+ * @returns The parsed and validated ServiceEnvConfig.
+ * @throws ZodError If required environment variables are missing or fail validation.
+ */
 export function loadServiceEnvConfig(env: NodeJS.ProcessEnv = process.env): ServiceEnvConfig {
   const source = normalizeServiceEnv(env)
   return EnvSchema.parse(source)
 }
 
+/**
+ * Build a process-style environment object containing auth- and runtime-related overrides derived from a validated ServiceEnvConfig.
+ *
+ * The returned object is a shallow merge of `env` with generated overrides (overrides take precedence). Boolean flags from the config are stringified. `PRM_RESOURCE_URL` and `MCP_RESOURCE_URL` are set to `config.PRM_RESOURCE_URL` when present, otherwise they fall back to `config.MCP_PUBLIC_BASE_URL`.
+ *
+ * @param config - Parsed service environment configuration (ServiceEnvConfig) used to produce override values.
+ * @param env - Base environment object to merge overrides into; defaults to `process.env`.
+ * @returns A new environment object (string -> string) combining `env` with auth/runtime overrides such as `MCP_PUBLIC_BASE_URL`, `PRM_RESOURCE_URL`, `MCP_RESOURCE_URL`, `OIDC_ISSUER`, `OIDC_AUDIENCE`, `ALLOWED_ORIGINS`, `REQUIRE_AUTH`, `ENABLE_STREAMABLE`, `ENABLE_SSE`, and `DEBUG_HEADERS`.
+ */
 export function buildAuthEnv(config: ServiceEnvConfig, env: NodeJS.ProcessEnv = process.env) {
   const overrides: Record<string, string> = {
     MCP_PUBLIC_BASE_URL: config.MCP_PUBLIC_BASE_URL,
@@ -55,6 +73,16 @@ export function buildAuthEnv(config: ServiceEnvConfig, env: NodeJS.ProcessEnv = 
   }
 }
 
+/**
+ * Normalize environment by copying legacy GITHUB_MCP_* variables to current keys.
+ *
+ * Creates a shallow copy of the provided env and, for each recognized legacy
+ * `GITHUB_MCP_*` key, copies its value to the corresponding modern key when
+ * present and non-empty. The original `env` object is not mutated.
+ *
+ * @param env - Source environment object (e.g., `process.env`).
+ * @returns A new environment object with legacy variables mapped to current keys.
+ */
 function normalizeServiceEnv(env: NodeJS.ProcessEnv) {
   const source = { ...env }
 
@@ -71,6 +99,15 @@ function normalizeServiceEnv(env: NodeJS.ProcessEnv) {
   return source
 }
 
+/**
+ * Copy a non-empty environment variable value from one key to another (in-place).
+ *
+ * If `env[fromKey]` is defined and not an empty string, sets `env[toKey]` to that value.
+ *
+ * @param env - The environment object to modify (e.g., `process.env`).
+ * @param fromKey - Source environment variable name.
+ * @param toKey - Destination environment variable name to set.
+ */
 function copyIfPresent(env: NodeJS.ProcessEnv, fromKey: string, toKey: string) {
   const value = env[fromKey]
   if (value !== undefined && value !== '') {

@@ -30,11 +30,34 @@ const EnvSchema = z.object({
 
 export type ServiceEnvConfig = z.infer<typeof EnvSchema>
 
+/**
+ * Load and validate the service environment into a typed ServiceEnvConfig.
+ *
+ * Normalizes any prefixed environment variables (e.g. `__SERVICE_NAME___PORT` → `PORT`), coerces values
+ * according to EnvSchema, and returns the parsed configuration. Uses `process.env` by default.
+ *
+ * @param env - Optional environment object to read from; defaults to `process.env`. The provided
+ *   object will be shallow-copied and normalized before validation.
+ * @returns The validated and coerced ServiceEnvConfig.
+ * @throws ZodError if the normalized environment does not satisfy EnvSchema.
+ */
 export function loadServiceEnvConfig(env: NodeJS.ProcessEnv = process.env): ServiceEnvConfig {
   const source = normalizeServiceEnv(env)
   return EnvSchema.parse(source)
 }
 
+/**
+ * Build an environment object for auth-related processes by applying config-derived overrides onto an existing env.
+ *
+ * The result is a shallow merge of `env` with explicit string overrides derived from `config`; overrides take precedence.
+ * Overrides set: `MCP_PUBLIC_BASE_URL`, `PRM_RESOURCE_URL` (falls back to `MCP_PUBLIC_BASE_URL` if unset),
+ * `MCP_RESOURCE_URL` (same fallback), `OIDC_ISSUER`, `OIDC_AUDIENCE`, `ALLOWED_ORIGINS`,
+ * `REQUIRE_AUTH`, `ENABLE_STREAMABLE`, `ENABLE_SSE`, and `DEBUG_HEADERS`.
+ *
+ * @param config - Validated service environment config used to produce the overrides.
+ * @param env - Base environment object to merge into; defaults to `process.env`.
+ * @returns A new environment object (Record<string, string | undefined>) with `config`-derived values applied as strings.
+ */
 export function buildAuthEnv(config: ServiceEnvConfig, env: NodeJS.ProcessEnv = process.env) {
   const overrides: Record<string, string> = {
     MCP_PUBLIC_BASE_URL: config.MCP_PUBLIC_BASE_URL,
@@ -55,6 +78,15 @@ export function buildAuthEnv(config: ServiceEnvConfig, env: NodeJS.ProcessEnv = 
   }
 }
 
+/**
+ * Returns a shallow copy of the given environment with known service-prefixed keys copied to their canonical names.
+ *
+ * Copies values from service-prefixed variables (e.g. `__SERVICE_ENV_PREFIX___PORT`) to canonical keys
+ * (e.g. `PORT`) when present and non-empty. The original `env` object is not mutated; only the returned object is modified.
+ *
+ * @param env - The environment object to normalize (typically `process.env`).
+ * @returns A new environment object containing the normalized keys.
+ */
 function normalizeServiceEnv(env: NodeJS.ProcessEnv) {
   const source = { ...env }
 
@@ -71,6 +103,16 @@ function normalizeServiceEnv(env: NodeJS.ProcessEnv) {
   return source
 }
 
+/**
+ * Copy a value from one environment key to another when the source is present and non-empty.
+ *
+ * If `env[fromKey]` is neither `undefined` nor an empty string, assigns that value to `env[toKey]`.
+ * This function mutates the provided `env` object in place.
+ *
+ * @param env - The environment object to read from and write to.
+ * @param fromKey - Source environment variable name to copy from.
+ * @param toKey - Destination environment variable name to copy to.
+ */
 function copyIfPresent(env: NodeJS.ProcessEnv, fromKey: string, toKey: string) {
   const value = env[fromKey]
   if (value !== undefined && value !== '') {
