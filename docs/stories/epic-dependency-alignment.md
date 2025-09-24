@@ -38,8 +38,8 @@ Upgrade our MCP service stack to the current Express 5 and MCP SDK ecosystem whi
 - [x] Architecture shard (`docs/architecture/tech-stack.md`) and PRD references updated to call out Express 5 baseline and new testing workflow.
 - [x] `.env.example`, compose snippets, and README instructions reflect the new scripts/behaviour across services, template, and auth kit.
 - [x] Follow-up items logged in `docs/stories/follow-ups.md` with outstanding entries (Express 5 peers now closed under Story 2.4; remaining items unrelated to this epic).
-- [ ] Any temporary regressions introduced during the accelerated rollout resolved and documented as closed in story completion notes.
-- [ ] No regressions observed in smoke tests or workspace lint/test commands once the alignment is complete.
+- [x] Any temporary regressions introduced during the accelerated rollout resolved and documented as closed in story completion notes (see Stories 2.1–2.3 completion notes for cleared Express 4 warnings and tooling gaps).
+- [x] No regressions observed in smoke tests or workspace lint/test commands once the alignment is complete (`npm run postbump:test` now passes across workspaces post-Story 2.4).
 
 ## Story Manager Handoff
 "Please draft detailed stories for this focused epic. Ensure each story:
