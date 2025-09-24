@@ -7,12 +7,12 @@ const port = envConfig.PORT
 
 const server = app.listen(port, bindHost, () => {
   console.log(
-    `__SERVICE_NAME__ listening on ${bindHost}:${port} (allowed origins: ${envConfig.MCP_ALLOWED_ORIGINS || 'none'})`,
+    `github-mcp listening on ${bindHost}:${port} (allowed origins: ${envConfig.MCP_ALLOWED_ORIGINS || 'none'})`,
   )
 })
 
 server.on('error', err => {
-  console.error('__SERVICE_NAME__ failed to start', err)
+  console.error('github-mcp failed to start', err)
   process.exit(1)
 })
 

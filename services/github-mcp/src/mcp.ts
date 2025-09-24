@@ -69,18 +69,18 @@ export const diagnosticsToolMetadata = {
 }
 
 /**
- * Create and configure an MCP server with a diagnostics "ping" tool.
+ * Builds and returns a configured McpServer instance with a registered diagnostics tool.
  *
- * The server is named from MCP_SERVER_NAME/MCP_SERVER_VERSION environment variables
- * (falling back to defaults) and registers a tool that returns a JSON-formatted
- * diagnostics payload constructed from the provided ping args and extra metadata.
+ * The server is initialized with name and version from environment variables (with fallbacks)
+ * and exposes a diagnostics.ping tool that returns a deterministic JSON payload describing
+ * service metadata, request headers, and any parsed authentication information.
  *
- * @param options - Configuration for the server. Only `allowedOrigins` is used by the diagnostics payload to indicate which origins are permitted.
- * @returns A configured McpServer instance with the diagnostics ping tool registered.
+ * @param options - Configuration for server construction; currently used to populate allowed origins in diagnostics payload.
+ * @returns The constructed and configured McpServer instance.
  */
 export async function buildMcpServer(options: BuildMcpServerOptions) {
   const server = new McpServer({
-    name: process.env.MCP_SERVER_NAME || '__SERVICE_NAME__',
+    name: process.env.MCP_SERVER_NAME || 'github-mcp',
     version: process.env.MCP_SERVER_VERSION || '0.1.0',
   })
 
@@ -108,16 +108,14 @@ export async function buildMcpServer(options: BuildMcpServerOptions) {
 }
 
 /**
- * Retrieve a single header value from either a Headers instance or a header bag.
+ * Retrieve a header value by name from either a Headers instance or a HeaderBag.
  *
- * Looks up `name` on the provided `headers`. If `headers` is a `Headers` object, its `get`
- * method is used. If `headers` is a header bag (Record<string, string | string[]>), the
- * function checks the exact key and then the lowercased key. If the stored value is an
- * array, the first element is returned. Returns `null` when the header is missing.
+ * Accepts either a Fetch `Headers`-compatible object or a plain header bag (Record<string, string | string[]>).
+ * For array values, the first element is returned. Name lookups try the exact key then the lowercased key.
  *
- * @param headers - A `Headers` instance or a header bag (string -> string | string[]); may be undefined.
- * @param name - The header name to retrieve.
- * @returns The header value (first element if an array) or `null` if not present.
+ * @param headers - A Headers instance or a header bag (may be undefined)
+ * @param name - Header name to look up
+ * @returns The header value string if present, otherwise `null`
  */
 function getHeader(
   headers: DiagnosticsRequestInfo['headers'] | undefined,
@@ -136,19 +134,15 @@ function getHeader(
 }
 
 /**
- * Build a DiagnosticsMetadata object from ping arguments, request/execution extras, and server options.
+ * Build a deterministic diagnostics payload describing service metadata and request/auth context.
  *
- * Produces metadata used by the diagnostics.ping tool: includes the current timestamp, configured allowed origins,
- * an optional note from `args`, an extracted `origin` header from `extra.requestInfo.headers`, user identification,
- * and token details when `extra.authInfo` is present. If `authInfo.token` is provided the function attempts to
- * decode it as a JWT to populate `subject`, `audiences`, and `expiresAt`; if decoding fails those JWT-derived
- * fields are cleared and a warning is logged.
+ * The payload includes allowed origins, an optional note, a timestamp, optional token details
+ * (scopes, clientId, resource, subject, audiences, expiresAt), a derived userId, and the request origin.
  *
- * @param args - Optional ping input; `args.note`, if present, is copied into `note` in the metadata.
- * @param extra - Structured extra diagnostics data; may contain `authInfo` (scopes, clientId, resource, expiresAt, token)
- *                and `requestInfo.headers` (a Headers instance or header bag) used to populate token and origin fields.
- * @param options - Server build options; `options.allowedOrigins` is copied into the metadata's `allowedOrigins`.
- * @returns The constructed DiagnosticsMetadata with timestamp, allowedOrigins, note, origin, userId, and optional token info.
+ * @param args - Optional ping arguments; `note` from `args` will be included in the payload when present.
+ * @param extra - Parsed diagnostics extra data containing optional `authInfo` and `requestInfo`.
+ * @param options - Server build options; `allowedOrigins` from `options` is copied into the payload.
+ * @returns A DiagnosticsMetadata object suitable for JSON serialization and returning to callers.
  */
 export function buildDiagnosticsPayload(
   args: PingArgs | undefined,

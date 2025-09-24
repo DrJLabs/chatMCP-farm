@@ -17,21 +17,15 @@ export interface CreateAppOptions {
 }
 
 /**
- * Create and configure an Express application for the MCP service.
+ * Create and configure the Express application for the MCP service.
  *
- * Initializes environment configuration and AuthKit, builds an MCP server, registers
- * middleware and routes (manifest, health, OAuth helpers, and MCP session endpoints),
- * and returns the Express app along with the resolved environment config and AuthKit context.
+ * Builds runtime configuration and an AuthKit context from environment variables, mounts request logging,
+ * CORS/origin checks, OAuth-protected endpoints, a manifest endpoint, health check, and the MCP endpoints
+ * that manage StreamableHTTPServerTransport sessions. Also initializes an MCP server instance and tracks
+ * per-session transports.
  *
- * The app enforces Accept header requirements for MCP endpoints, exposes `/mcp` session-based
- * transport routes (POST/GET/DELETE/HEAD/OPTIONS), maintains an in-memory map of active
- * StreamableHTTPServerTransport instances, and sets the `Mcp-Protocol-Version` header on MCP requests.
- *
- * Note: this function configures and connects transports to the MCP server but does not start
- * an HTTP listener — callers must call `app.listen(...)` themselves.
- *
- * @param options - Optional creation options. Provide `options.env` to override process.env for configuration loading.
- * @returns An object containing the configured Express `app`, the resolved `envConfig`, and the `authKit` context.
+ * @param options - Optional overrides (e.g., a custom `env` object) used to load configuration.
+ * @returns An object containing the configured Express app, the loaded service environment config, and the AuthKit context.
  */
 export async function createApp(options: CreateAppOptions = {}): Promise<CreateAppResult> {
   const envSource = options.env ?? process.env
@@ -52,7 +46,8 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   type TransportBody = TransportHandleArgs[2]
 
   // Express extends the Node request/response prototypes, which remain compatible with the
-  // transport's expectations. Casting through these helpers keeps handleRequest invocations concise.
+  // transport's expectations. Casts are centralized here to document the intent and keep
+  // handleRequest invocations type-safe.
   const toTransportRequest = (req: Request): TransportRequest => req as unknown as TransportRequest
   const toTransportResponse = (res: Response): TransportResponse => res as unknown as TransportResponse
   const toTransportBody = (body: unknown): TransportBody => body as TransportBody
@@ -99,7 +94,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     })
   })
 
-  app.get('/healthz', (_req, res) => res.json({ ok: true, service: '__SERVICE_NAME__' }))
+  app.get('/healthz', (_req, res) => res.json({ ok: true, service: 'github-mcp' }))
 
   const mcpServer = await buildMcpServer({ allowedOrigins: authKit.config.allowedOrigins })
 
@@ -223,15 +218,17 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
 }
 
 /**
- * Builds an Express request handler that returns the service manifest JSON for MCP clients.
+ * Creates an Express request handler that serves the MCP service manifest JSON.
  *
- * The handler produces a manifest conforming to the service schema version "2025-06-18", using configured
- * values from the provided AuthKit context with sensible fallbacks for name and description fields.
- * If authentication is required, the handler sets OAuth challenge headers on the response and includes
- * an `auth` block pointing to the issuer's authorization server. When debug headers are enabled in the
- * auth configuration, the response includes a redacted copy of the incoming request headers under `debug`.
+ * The returned handler responds with a manifest describing schema version, human/model
+ * names and descriptions (with defaults), auth metadata when authentication is required,
+ * available endpoints and capabilities, tools metadata, resource and allowed origins,
+ * and optional redacted request headers when debugHeaders is enabled.
  *
- * @returns An Express request handler (req, res) that responds with the manifest JSON.
+ * If `authKit.config.requireAuth` is true the handler will set the authentication
+ * challenge headers on the response before sending the manifest.
+ *
+ * @returns An Express request handler (req, res) => void that serializes the manifest to JSON.
  */
 function buildManifestHandler(authKit: AuthKitContext) {
   const fallbackName = 'MCP Service'
@@ -281,11 +278,9 @@ function buildManifestHandler(authKit: AuthKitContext) {
 }
 
 /**
- * Return the list of public HTTP endpoint paths exposed by the service.
+ * Returns the list of public MCP HTTP endpoints exposed by this service.
  *
- * Used to populate the service manifest's `endpoints` array.
- *
- * @returns The array of endpoint path strings (for example: ['/mcp']).
+ * @returns An array of endpoint paths (currently only `'/mcp'`).
  */
 function buildEndpointsList(authKit: AuthKitContext) {
   const endpoints = ['/mcp']
@@ -293,14 +288,12 @@ function buildEndpointsList(authKit: AuthKitContext) {
 }
 
 /**
- * Returns a shallow copy of the provided HTTP headers with sensitive values redacted.
+ * Redacts sensitive HTTP headers from a headers object.
  *
- * The returned object preserves all original header keys but replaces values for
- * the following headers (case-insensitive) with `'<redacted>'`: `authorization`,
- * `cookie`, and `proxy-authorization`.
+ * Replaces values of 'authorization', 'cookie', and 'proxy-authorization' (case-insensitive) with `'<redacted>'`.
  *
- * @param headers - The request headers to redact (typically `Request['headers']`).
- * @returns A cloned headers object with sensitive header values replaced.
+ * @param headers - Incoming request headers to redact.
+ * @returns A shallow-cloned headers object with sensitive header values replaced by `'<redacted>'`.
  */
 function redactHeaders(headers: Request['headers']) {
   const clone: Record<string, unknown> = { ...headers }

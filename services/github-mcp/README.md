@@ -1,4 +1,4 @@
-# __SERVICE_NAME__ service
+# github-mcp service
 
 Baseline MCP service scaffold built on Express, `@modelcontextprotocol/sdk`, and `mcp-auth-kit`. Replace the placeholders in this directory with your implementation details once scaffolded.
 
@@ -17,16 +17,16 @@ Baseline MCP service scaffold built on Express, `@modelcontextprotocol/sdk`, and
 ## Running locally
 ```bash
 # Aggregate compose files (requires docker compose v2)
-./scripts/compose.sh --profile __SERVICE_NAME__ up --build
+./scripts/compose.sh --profile github-mcp up --build
 
 # or for CI/automation
-COMPOSE_PROFILES=__SERVICE_NAME__ ./scripts/compose.sh up --build
+COMPOSE_PROFILES=github-mcp ./scripts/compose.sh up --build
 ```
 
 - The profile keeps the service disabled unless explicitly requested.
 - Ensure the external network referenced by `.env` exists beforehand: `docker network inspect ${MCP_NETWORK_EXTERNAL:-traefik} || docker network create ${MCP_NETWORK_EXTERNAL:-traefik}`.
 - Health endpoint: `GET http://127.0.0.1:8770/healthz`.
-- Tear down with `./scripts/compose.sh --profile __SERVICE_NAME__ down --remove-orphans` when finished.
+- Tear down with `./scripts/compose.sh --profile github-mcp down --remove-orphans` when finished.
 
 ## Manual verification
 ```bash
@@ -60,7 +60,7 @@ curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
    ```
 3. **Execute the smoke script**
    ```bash
-   MCP_BASE_URL=http://127.0.0.1:8770/mcp MCP_ACCESS_TOKEN="$ACCESS_TOKEN" npm run smoke --workspace __SERVICE_NAME__
+   MCP_BASE_URL=http://127.0.0.1:8770/mcp MCP_ACCESS_TOKEN="$ACCESS_TOKEN" npm run smoke --workspace github-mcp
    ```
 
 Collect the aggregated output in change reviews to demonstrate end-to-end readiness.

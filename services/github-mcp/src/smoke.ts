@@ -3,16 +3,16 @@ const token = process.env.MCP_ACCESS_TOKEN || ''
 const protocol = process.env.MCP_PROTOCOL_VERSION || '2025-06-18'
 
 /**
- * Performs a JSON-RPC "initialize" smoke test against the configured MCP endpoint.
+ * Sends a JSON-RPC `initialize` request to the configured MCP endpoint as a smoke test.
  *
- * Sends a POST with an `initialize` payload (protocolVersion 2025-06-18, capabilities, and clientInfo)
- * to the base MCP URL. Uses SMOKE_TIMEOUT_MS (default 10000 ms) to abort the request via AbortController.
- * If an access token is available it is sent as a Bearer Authorization header. On success the parsed
- * response is logged along with the Accept header sent and any MCP diagnostic headers (`mcp-session-id`,
- * `mcp-protocol-version`).
+ * Performs a POST with a JSON-RPC 2.0 payload (id `smoke`) including protocolVersion,
+ * empty capabilities, and clientInfo. Uses SMOKE_TIMEOUT_MS (default 10000) to abort
+ * the request if it takes too long and, if set, includes the MCP_ACCESS_TOKEN as a
+ * Bearer Authorization header. On success logs the parsed response and relevant MCP
+ * response headers (`mcp-session-id`, `mcp-protocol-version`).
  *
- * @returns A promise that resolves when the request completes and logging is finished.
- * @throws Error If the HTTP response has a non-OK status; the thrown message includes the status and response body.
+ * @returns A promise that resolves when the request completes and logs are produced.
+ * @throws {Error} If the HTTP response has a non-OK status (error message includes status and body) or if the fetch fails.
  */
 async function main() {
   const payload = {
