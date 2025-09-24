@@ -5,7 +5,7 @@ Baseline MCP service scaffold built on Express, `@modelcontextprotocol/sdk`, and
 ## What's included
 - Streamable HTTP transport with origin + auth enforcement wired through `mcp-auth-kit`.
 - Deterministic `diagnostics.ping` tool for end-to-end smoke checks.
-- Dockerfile, compose snippet, and `.env.example` aligned with workspace conventions (opt-in compose profile, resource limits, external Traefik network).
+- Dockerfile, compose.yml, and `.env.example` aligned with workspace conventions (opt-in compose profile, resource limits, external Traefik network).
 - Vitest suite covering manifest metadata, Accept header handling, and diagnostics payload composition.
 - Smoke script (`npm run smoke`) that exercises the Streamable HTTP endpoint and logs session headers.
 
@@ -66,11 +66,11 @@ curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
 Collect the aggregated output in change reviews to demonstrate end-to-end readiness.
 
 ## Keycloak notes
-- Create a confidential client with service-account enabled using the local Keycloak admin (default http://127.0.0.1:5050/auth).
+- Create a confidential client with service-account enabled using the local Keycloak admin (default [http://127.0.0.1:5050/auth](http://127.0.0.1:5050/auth)).
 - Dynamic Client Registration (DCR) automatically writes redirect URIs for ChatGPT-managed clients. If you provision a static client instead, allow `https://chatgpt.com/connector_platform_oauth_redirect` explicitly.
 - Export sanitized realm configuration with `./kc_export_realm.sh --realm OMA` after registering the client.
 
 ## Next steps
 - Update `src/mcp.ts` with real tools, resources, and storage as your service evolves.
-- Adjust the compose snippet ports/labels to match your deployment topology.
+- Adjust the compose.yml ports/labels to match your deployment topology.
 - Extend the Vitest suite with service-specific assertions.

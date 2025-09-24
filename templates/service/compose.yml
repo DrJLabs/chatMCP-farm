@@ -8,6 +8,11 @@ services:
       dockerfile: ${MCP_DOCKERFILE:-services/__SERVICE_NAME__/Dockerfile}
     env_file:
       - ./services/__SERVICE_NAME__/.env
+    environment:
+      - MCP_NAME_HUMAN=${__SERVICE_ENV_PREFIX___SERVICE_NAME_HUMAN:-__SERVICE_NAME__ service}
+      - MCP_NAME_MODEL=${__SERVICE_ENV_PREFIX___SERVICE_NAME_MODEL:-__SERVICE_NAME__}
+      - MCP_DESCRIPTION_HUMAN=${__SERVICE_ENV_PREFIX___SERVICE_DESCRIPTION:-Describe your __SERVICE_NAME__ service}
+      - MCP_DESCRIPTION_MODEL=${__SERVICE_ENV_PREFIX___SERVICE_DESCRIPTION:-Describe your __SERVICE_NAME__ service}
     healthcheck:
       test:
         - CMD-SHELL

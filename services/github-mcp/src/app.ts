@@ -34,8 +34,9 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   const authKit = createAuthKit(loadAuthKitOptionsFromEnv(authEnv))
   const app = express()
   app.set('trust proxy', true)
+  app.disable('x-powered-by')
 
-  const MCP_PROTOCOL_VERSION = '2025-06-18'
+  const MCP_PROTOCOL_VERSION = process.env.MCP_PROTOCOL_VERSION ?? '2025-06-18'
 
   const transports = new Map<string, StreamableHTTPServerTransport>()
 
@@ -44,6 +45,9 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   type TransportResponse = TransportHandleArgs[1]
   type TransportBody = TransportHandleArgs[2]
 
+  // Express extends the Node request/response prototypes, which remain compatible with the
+  // transport's expectations. Casts are centralized here to document the intent and keep
+  // handleRequest invocations type-safe.
   const toTransportRequest = (req: Request): TransportRequest => req as unknown as TransportRequest
   const toTransportResponse = (res: Response): TransportResponse => res as unknown as TransportResponse
   const toTransportBody = (body: unknown): TransportBody => body as TransportBody
@@ -53,23 +57,30 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
 
   app.use(authKit.originCheck)
   app.use(authKit.cors)
-  app.use(express.json({ limit: '1mb' }))
+  const jsonParser = express.json({ limit: '1mb' })
+  app.use((req, res, next) => {
+    if (req.path === '/mcp') return next()
+    return jsonParser(req, res, next)
+  })
 
   const manifestHandler = buildManifestHandler(authKit)
 
   app.get('/.well-known/mcp/manifest.json', manifestHandler)
   app.get('/.well-known/oauth-protected-resource', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store')
     if (authKit.config.requireAuth) authKit.setChallengeHeaders(res)
     authKit.prmHandler(req, res)
   })
 
-  app.all(/\/.well-known\/oauth-authorization-server(\/.*)?$/, (req: Request, res: Response) => {
+  app.all(/^\/\.well-known\/oauth-authorization-server(\/.*)?$/, (req: Request, res: Response) => {
     const issuer = authKit.config.issuer.replace(/\/$/, '')
-    const suffix = (req.params as any)[0] || ''
-    res.redirect(308, `${issuer}/.well-known/oauth-authorization-server${suffix}`)
+    const suffix = req.path.replace(/^\/\.well-known\/oauth-authorization-server/, '')
+    const query = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : ''
+    res.redirect(308, `${issuer}/.well-known/oauth-authorization-server${suffix}${query}`)
   })
 
   app.get('/', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store')
     if (authKit.config.requireAuth) authKit.setChallengeHeaders(res)
     res.json({
       name: authKit.config.manifestNameHuman,
@@ -88,8 +99,9 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   const mcpServer = await buildMcpServer({ allowedOrigins: authKit.config.allowedOrigins })
 
   function ensureAcceptHeader(req: Request, res: Response) {
-    const accept = `${req.headers['accept'] || ''}`
-    if (!accept.includes('application/json') && !accept.includes('text/event-stream')) {
+    const accept = `${req.headers['accept'] ?? ''}`.toLowerCase()
+    const acceptsWildcard = accept.includes('*/*')
+    if (!acceptsWildcard && !accept.includes('application/json') && !accept.includes('text/event-stream')) {
       if (authKit.config.requireAuth) authKit.setChallengeHeaders(res)
       res.status(406).json({
         error: 'not_acceptable',
@@ -102,7 +114,8 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
 
   function mcpHeadersMiddleware(req: Request, res: Response, next: NextFunction) {
     if (!ensureAcceptHeader(req, res)) return
-    res.setHeader('Mcp-Protocol-Version', MCP_PROTOCOL_VERSION)
+    res.vary('Accept')
+    res.setHeader('MCP-Protocol-Version', MCP_PROTOCOL_VERSION)
     next()
   }
 
@@ -163,11 +176,16 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
       const sid = getSessionId(req)
       const existingTransport = sid ? transports.get(sid) : undefined
       const transport = existingTransport ?? (await createTransport())
-      await transport.handleRequest(
-        toTransportRequest(req),
-        toTransportResponse(res),
-        toTransportBody(req.body),
-      )
+      const body = (req as Request & { body?: unknown }).body
+      if (body !== undefined) {
+        await transport.handleRequest(
+          toTransportRequest(req),
+          toTransportResponse(res),
+          toTransportBody(body),
+        )
+      } else {
+        await transport.handleRequest(toTransportRequest(req), toTransportResponse(res))
+      }
     } catch (err) {
       console.error('Streamable POST error', err)
       if (!res.headersSent) res.status(500).json({ error: 'internal_error' })
@@ -192,7 +210,7 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     }),
   )
 
-  app.head('/mcp', authGuard, async (_req, res) => {
+  app.head('/mcp', authGuard, mcpHeadersMiddleware, async (_req, res) => {
     res.status(204).end()
   })
 
@@ -226,6 +244,7 @@ function buildManifestHandler(authKit: AuthKitContext) {
   const endpoints = buildEndpointsList(authKit)
 
   return (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store')
     if (authKit.config.requireAuth) authKit.setChallengeHeaders(res)
     res.json({
       schemaVersion: '2025-06-18',
@@ -277,13 +296,22 @@ function buildEndpointsList(authKit: AuthKitContext) {
  * @returns A shallow-cloned headers object with sensitive header values replaced by `'<redacted>'`.
  */
 function redactHeaders(headers: Request['headers']) {
-  const clone: Record<string, unknown> = { ...headers };
-  const headersToRedact = ['authorization', 'cookie', 'proxy-authorization'];
+  const clone: Record<string, unknown> = { ...headers }
+  const headersToRedact = [
+    'authorization',
+    'proxy-authorization',
+    'cookie',
+    'set-cookie',
+    'x-api-key',
+    'x-auth-token',
+    'x-csrf-token',
+    'x-forwarded-authorization',
+  ]
 
   for (const header of Object.keys(clone)) {
     if (headersToRedact.includes(header.toLowerCase())) {
-      clone[header] = '<redacted>';
+      clone[header] = '<redacted>'
     }
   }
-  return clone;
+  return clone
 }

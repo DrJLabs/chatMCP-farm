@@ -8,8 +8,7 @@
   },
   "workspaces": [
     "packages/*",
-    "services/*",
-    "services/github-mcp"
+    "services/*"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",

@@ -17,7 +17,7 @@ function buildTestEnv(overrides: Record<string, string> = {}) {
   }
 }
 
-describe('manifest and metadata endpoints', async () => {
+describe('manifest and metadata endpoints', () => {
   it('returns manifest populated from environment and emits challenges', async () => {
     const env = buildTestEnv()
     const { app } = await createApp({ env })

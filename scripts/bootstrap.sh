@@ -57,6 +57,7 @@ for path in dest.rglob('*'):
 PY
 
 BOOTSTRAP_SERVICE_NAME="${SERVICE_NAME}" ROOT_DIR="${ROOT_DIR}" python3 - <<'PY'
+import fnmatch
 import json
 import os
 from pathlib import Path
@@ -68,13 +69,21 @@ if pkg_path.exists():
     workspaces = data.get('workspaces')
     changed = False
     entry = f'services/{service}'
+    def covered_by_glob(patterns, candidate):
+        for pattern in patterns:
+            if isinstance(pattern, str) and any(ch in pattern for ch in '*?['):
+                if fnmatch.fnmatch(candidate, pattern):
+                    return True
+        return False
     if isinstance(workspaces, list):
-        if entry not in workspaces:
+        patterns = [p for p in workspaces if isinstance(p, str)]
+        if entry not in patterns and not covered_by_glob(patterns, entry):
             workspaces.append(entry)
             changed = True
     elif isinstance(workspaces, dict):
         packages = workspaces.setdefault('packages', [])
-        if entry not in packages:
+        patterns = [p for p in packages if isinstance(p, str)]
+        if entry not in patterns and not covered_by_glob(patterns, entry):
             packages.append(entry)
             changed = True
     elif workspaces is None:

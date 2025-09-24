@@ -1,5 +1,6 @@
 const base = process.env.MCP_BASE_URL || 'http://127.0.0.1:8770/mcp'
 const token = process.env.MCP_ACCESS_TOKEN || ''
+const protocol = process.env.MCP_PROTOCOL_VERSION || '2025-06-18'
 
 /**
  * Performs a JSON-RPC "initialize" smoke test against the configured MCP endpoint.
@@ -19,7 +20,7 @@ async function main() {
     id: 'smoke',
     method: 'initialize',
     params: {
-      protocolVersion: '2025-06-18',
+      protocolVersion: protocol,
       capabilities: {},
       clientInfo: { name: 'smoke', version: '0.0.1' },
     },
@@ -27,7 +28,7 @@ async function main() {
 
   const headers: Record<string, string> = {
     'content-type': 'application/json',
-    accept: 'application/json, text/event-stream',
+    accept: process.env.SMOKE_ACCEPT || 'application/json',
   }
   if (token) headers['authorization'] = `Bearer ${token}`
 
@@ -53,7 +54,8 @@ async function main() {
     console.log('initialize response:', JSON.stringify(data, null, 2))
     console.log('accept header sent:', headers.accept)
     console.log('mcp-session-id header:', sessionId)
-    const protocolHeader = res.headers.get('mcp-protocol-version')
+    const protocolHeader =
+      res.headers.get('mcp-protocol-version') ?? res.headers.get('MCP-Protocol-Version')
     if (protocolHeader) {
       console.log('mcp-protocol-version header:', protocolHeader)
     }

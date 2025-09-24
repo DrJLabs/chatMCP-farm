@@ -33,5 +33,5 @@
     "vitest": "^1.6.0",
     "@types/supertest": "^2.0.16"
   },
-  "description": "Replace with a short description of your service"
+  "description": "GitHub Model Context Protocol service scaffold"
 }

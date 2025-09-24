@@ -8,6 +8,11 @@ services:
       dockerfile: ${MCP_DOCKERFILE:-services/github-mcp/Dockerfile}
     env_file:
       - ./services/github-mcp/.env
+    environment:
+      - MCP_NAME_HUMAN=${GITHUB_MCP_SERVICE_NAME_HUMAN:-github-mcp service}
+      - MCP_NAME_MODEL=${GITHUB_MCP_SERVICE_NAME_MODEL:-github-mcp}
+      - MCP_DESCRIPTION_HUMAN=${GITHUB_MCP_SERVICE_DESCRIPTION:-Describe your github-mcp service}
+      - MCP_DESCRIPTION_MODEL=${GITHUB_MCP_SERVICE_DESCRIPTION:-Describe your github-mcp service}
     healthcheck:
       test:
         - CMD-SHELL

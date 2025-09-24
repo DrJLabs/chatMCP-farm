@@ -190,7 +190,8 @@ export function buildDiagnosticsPayload(
     ? String(extra.authInfo.extra?.userId ?? extra.authInfo.clientId ?? '') || null
     : null
 
-  const originHeader = getHeader(extra.requestInfo?.headers, 'origin')
+  const originHeader =
+    getHeader(extra.requestInfo?.headers, 'origin') ?? getHeader(extra.requestInfo?.headers, 'referer')
   metadata.origin = originHeader
 
   return metadata
