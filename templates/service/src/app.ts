@@ -16,6 +16,23 @@ export interface CreateAppOptions {
   env?: NodeJS.ProcessEnv
 }
 
+/**
+ * Create and configure an Express application for the MCP service.
+ *
+ * Initializes environment configuration and AuthKit, builds an MCP server, registers
+ * middleware and routes (manifest, health, OAuth helpers, and MCP session endpoints),
+ * and returns the Express app along with the resolved environment config and AuthKit context.
+ *
+ * The app enforces Accept header requirements for MCP endpoints, exposes `/mcp` session-based
+ * transport routes (POST/GET/DELETE/HEAD/OPTIONS), maintains an in-memory map of active
+ * StreamableHTTPServerTransport instances, and sets the `Mcp-Protocol-Version` header on MCP requests.
+ *
+ * Note: this function configures and connects transports to the MCP server but does not start
+ * an HTTP listener — callers must call `app.listen(...)` themselves.
+ *
+ * @param options - Optional creation options. Provide `options.env` to override process.env for configuration loading.
+ * @returns An object containing the configured Express `app`, the resolved `envConfig`, and the `authKit` context.
+ */
 export async function createApp(options: CreateAppOptions = {}): Promise<CreateAppResult> {
   const envSource = options.env ?? process.env
   const envConfig = loadServiceEnvConfig(envSource)
@@ -165,6 +182,17 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
   return { app, envConfig, authKit }
 }
 
+/**
+ * Builds an Express request handler that returns the service manifest JSON for MCP clients.
+ *
+ * The handler produces a manifest conforming to the service schema version "2025-06-18", using configured
+ * values from the provided AuthKit context with sensible fallbacks for name and description fields.
+ * If authentication is required, the handler sets OAuth challenge headers on the response and includes
+ * an `auth` block pointing to the issuer's authorization server. When debug headers are enabled in the
+ * auth configuration, the response includes a redacted copy of the incoming request headers under `debug`.
+ *
+ * @returns An Express request handler (req, res) that responds with the manifest JSON.
+ */
 function buildManifestHandler(authKit: AuthKitContext) {
   const fallbackName = 'MCP Service'
   const fallbackModelName = 'mcp_service'
@@ -211,11 +239,28 @@ function buildManifestHandler(authKit: AuthKitContext) {
   }
 }
 
+/**
+ * Return the list of public HTTP endpoint paths exposed by the service.
+ *
+ * Used to populate the service manifest's `endpoints` array.
+ *
+ * @returns The array of endpoint path strings (for example: ['/mcp']).
+ */
 function buildEndpointsList(authKit: AuthKitContext) {
   const endpoints = ['/mcp']
   return endpoints
 }
 
+/**
+ * Returns a shallow copy of the provided HTTP headers with sensitive values redacted.
+ *
+ * The returned object preserves all original header keys but replaces values for
+ * the following headers (case-insensitive) with `'<redacted>'`: `authorization`,
+ * `cookie`, and `proxy-authorization`.
+ *
+ * @param headers - The request headers to redact (typically `Request['headers']`).
+ * @returns A cloned headers object with sensitive header values replaced.
+ */
 function redactHeaders(headers: Request['headers']) {
   const clone: Record<string, unknown> = { ...headers };
   const headersToRedact = ['authorization', 'cookie', 'proxy-authorization'];

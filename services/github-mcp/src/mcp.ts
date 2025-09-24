@@ -68,6 +68,16 @@ export const diagnosticsToolMetadata = {
     'Returns a deterministic response containing service metadata. Use to confirm OAuth + Streamable HTTP wiring.',
 }
 
+/**
+ * Builds and returns a configured McpServer instance with a registered diagnostics tool.
+ *
+ * The server is initialized with name and version from environment variables (with fallbacks)
+ * and exposes a diagnostics.ping tool that returns a deterministic JSON payload describing
+ * service metadata, request headers, and any parsed authentication information.
+ *
+ * @param options - Configuration for server construction; currently used to populate allowed origins in diagnostics payload.
+ * @returns The constructed and configured McpServer instance.
+ */
 export async function buildMcpServer(options: BuildMcpServerOptions) {
   const server = new McpServer({
     name: process.env.MCP_SERVER_NAME || 'github-mcp',
@@ -97,6 +107,16 @@ export async function buildMcpServer(options: BuildMcpServerOptions) {
   return server
 }
 
+/**
+ * Retrieve a header value by name from either a Headers instance or a HeaderBag.
+ *
+ * Accepts either a Fetch `Headers`-compatible object or a plain header bag (Record<string, string | string[]>).
+ * For array values, the first element is returned. Name lookups try the exact key then the lowercased key.
+ *
+ * @param headers - A Headers instance or a header bag (may be undefined)
+ * @param name - Header name to look up
+ * @returns The header value string if present, otherwise `null`
+ */
 function getHeader(
   headers: DiagnosticsRequestInfo['headers'] | undefined,
   name: string,
@@ -113,6 +133,17 @@ function getHeader(
   return candidate ?? null
 }
 
+/**
+ * Build a deterministic diagnostics payload describing service metadata and request/auth context.
+ *
+ * The payload includes allowed origins, an optional note, a timestamp, optional token details
+ * (scopes, clientId, resource, subject, audiences, expiresAt), a derived userId, and the request origin.
+ *
+ * @param args - Optional ping arguments; `note` from `args` will be included in the payload when present.
+ * @param extra - Parsed diagnostics extra data containing optional `authInfo` and `requestInfo`.
+ * @param options - Server build options; `allowedOrigins` from `options` is copied into the payload.
+ * @returns A DiagnosticsMetadata object suitable for JSON serialization and returning to callers.
+ */
 export function buildDiagnosticsPayload(
   args: PingArgs | undefined,
   extra: DiagnosticsExtra,
