@@ -34,14 +34,15 @@ After scaffolding a new service, run the baseline verification sequence and capt
 ```bash
 npm install --workspace services/__SERVICE_NAME__
 npm run lint --workspace services/__SERVICE_NAME__
-npm run test -- --coverage --workspace services/__SERVICE_NAME__
+npm run test --workspace services/__SERVICE_NAME__ -- --coverage
 npm run build --workspace services/__SERVICE_NAME__
 npm run smoke --workspace services/__SERVICE_NAME__
 npm run postbump:test
 npm ls express --workspace services/__SERVICE_NAME__
+npm ls @types/express --workspace services/__SERVICE_NAME__
 ```
 
-These commands confirm the Express 5 dependency tree, enforce lint/test/build parity, exercise the smoke script, and verify the workspace-wide `postbump:test` helper.
+These commands confirm the Express 5 runtime and type dependency trees, enforce lint/test/build parity, exercise the smoke script, and verify the workspace-wide `postbump:test` helper.
 
 ## Manual verification
 ```bash

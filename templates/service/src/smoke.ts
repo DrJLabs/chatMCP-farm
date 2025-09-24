@@ -46,17 +46,23 @@ async function main() {
     }
 
     const contentType = res.headers.get('content-type') || ''
-    const bodyPayload = contentType.includes('text/event-stream') ? await res.text() : await res.json()
     const sessionId = res.headers.get('mcp-session-id') ?? 'missing'
-    if (typeof bodyPayload === 'string') {
-      console.log('initialize stream (event-stream payload):')
-      console.log(bodyPayload)
+    if (contentType.includes('text/event-stream')) {
+      const reader = res.body?.getReader()
+      if (!reader) throw new Error('event-stream response missing readable body')
+      const decoder = new TextDecoder()
+      const { value } = await reader.read()
+      const preview = decoder.decode(value ?? new Uint8Array(), { stream: true })
+      await reader.cancel()
+      console.log('initialize stream (event-stream payload preview):')
+      console.log(preview || '[no data before stream cancelled]')
     } else {
+      const bodyPayload = await res.json()
       console.log('initialize response:', JSON.stringify(bodyPayload, null, 2))
     }
     console.log('accept header sent:', headers.accept)
     console.log('mcp-session-id header:', sessionId)
-    const protocolHeader = res.headers.get('mcp-protocol-version') ?? res.headers.get('MCP-Protocol-Version')
+    const protocolHeader = res.headers.get('mcp-protocol-version')
     if (protocolHeader) {
       console.log('mcp-protocol-version header:', protocolHeader)
     }

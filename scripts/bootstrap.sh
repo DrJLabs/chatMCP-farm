@@ -104,10 +104,11 @@ Next steps:
   3. Run the Express 5 baseline workflow:
        npm install --workspace services/${SERVICE_NAME}
        npm run lint --workspace services/${SERVICE_NAME}
-       npm run test -- --coverage --workspace services/${SERVICE_NAME}
+       npm run test --workspace services/${SERVICE_NAME} -- --coverage
        npm run build --workspace services/${SERVICE_NAME}
        npm run smoke --workspace services/${SERVICE_NAME}
        npm run postbump:test
        npm ls express --workspace services/${SERVICE_NAME}
+       npm ls @types/express --workspace services/${SERVICE_NAME}
   4. Add the service to docker-compose.yml (templates/service/compose.yml shows labels).
 NOTE

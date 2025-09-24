@@ -135,16 +135,14 @@ function getHeader(
   }
   const bag = headers as HeaderBag
   const target = name.toLowerCase()
-  for (const key of Object.keys(bag)) {
-    if (key === name || key.toLowerCase() === target) {
-      const candidate = bag[key]
-      if (Array.isArray(candidate)) {
-        return candidate[0] ?? null
-      }
-      return candidate ?? null
-    }
+  const key = Object.keys(bag).find(candidateKey => candidateKey === name || candidateKey.toLowerCase() === target)
+  if (!key) return null
+
+  const candidate = bag[key]
+  if (Array.isArray(candidate)) {
+    return candidate[0] ?? null
   }
-  return null
+  return candidate ?? null
 }
 
 /**
@@ -254,6 +252,6 @@ function extractRateLimit(headers: DiagnosticsRequestInfo['headers'] | undefined
     limit: parsedLimit,
     remaining: parsedRemaining,
     resetAt,
-    retryAfter: retryAfter ?? undefined,
+    retryAfter: retryAfter || undefined,
   }
 }
