@@ -19,7 +19,7 @@ Upgrade our MCP service stack to the current Express 5 and MCP SDK ecosystem whi
 ## Stories
 - [x] **Story 2.1:** Upgrade `services/mcp-test-server` dependencies to Express 5, SDK 1.18.1, Zod 3.24.x, Supertest 7.1.x, Vitest 3.2.x, and TS toolchain; reconcile router/config changes and restore lint/test parity.
 - [ ] **Story 2.2:** Mirror the dependency upgrades in `services/github-mcp`, adjust tests for Express 5 differences, and verify smoke tooling remains stable.
-- [ ] **Story 2.3:** Refresh `templates/service` so newly bootstrapped services inherit Express 5 defaults, Vitest 3 config, and updated `.env` + compose fragments. *(May be sequenced after Story 2.4 if auth-kit peers need to land first; document skip in story notes.)*
+- [x] **Story 2.3:** Refresh `templates/service` so newly bootstrapped services inherit Express 5 defaults, Vitest 3 config, and updated `.env` + compose fragments. *(May be sequenced after Story 2.4 if auth-kit peers need to land first; document skip in story notes.)*
 - [ ] **Story 2.4:** Update `packages/mcp-auth-kit` peer ranges and `jose` patch level, publish migration notes, and add workspace-wide post-bump script (`npm run test --workspaces` helper) plus documentation updates (tech stack, coding standards references, rollback guidance).
 
 ## Compatibility Requirements
