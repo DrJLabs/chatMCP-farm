@@ -1,21 +1,13 @@
-/**
- * Test library/framework: Jest-style APIs (expect/describe/it) with TypeScript.
- * If the repository uses Vitest, this test file remains compatible.
- *
- * These tests focus on the public surface exposed by the mcp-auth-kit index,
- * covering happy paths, edge cases, and failure modes, with mocks for external deps.
- */
-
 import type { Request, Response, NextFunction } from 'express'
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 
-// Use dynamic import to avoid ESM/CJS interop pitfalls in mixed setups
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { createRequire } from 'node:module'
-const reqr = typeof createRequire === 'function' ? createRequire(import.meta?.url || __filename) : require
+// Mock jose so jwtVerify does not hit the network while leaving createRemoteJWKSet callable.
+vi.mock('jose', () => {
+  const jwtVerify = vi.fn().mockResolvedValue({ payload: { email: 'user@example.com' } })
+  const createRemoteJWKSet = vi.fn(() => vi.fn())
+  return { jwtVerify, createRemoteJWKSet }
+})
 
-// Import from source; adjust path if package build structure differs
-// Try src first; fallback to dist if tests run against built output.
 let mod: any
 beforeAll(async () => {
   try {
@@ -27,11 +19,14 @@ beforeAll(async () => {
       try {
         mod = await import('../dist/index.js')
       } catch {
-        // As a last resort attempt package entry
         mod = await import('..')
       }
     }
   }
+})
+
+afterEach(() => {
+  vi.clearAllMocks()
 })
 
 function mockRes(): Response & { _status?: number; _json?: any; _headers: Record<string,string>; locals: any; _ended?: boolean } {
@@ -150,7 +145,7 @@ describe('originCheck middleware', () => {
     })
     const req = mockReq({ headers: {} })
     const res = mockRes()
-    const next = jest.fn()
+    const next = vi.fn()
     ctx.originCheck(req, res, next)
     expect(next).toHaveBeenCalled()
   })
@@ -166,7 +161,7 @@ describe('originCheck middleware', () => {
     })
     const req = mockReq({ headers: { origin: allowed } as any })
     const res = mockRes()
-    const next = jest.fn()
+    const next = vi.fn()
     ctx.originCheck(req, res, next)
     expect(next).toHaveBeenCalled()
   })
@@ -181,7 +176,7 @@ describe('originCheck middleware', () => {
     })
     const req = mockReq({ headers: { origin: 'https://nope.com' } as any })
     const res = mockRes()
-    const next = jest.fn()
+    const next = vi.fn()
     ctx.originCheck(req, res, next)
     expect(res._status).toBe(403)
     expect(res._json).toEqual({ error: 'origin not allowed' })
@@ -215,7 +210,7 @@ describe('authGuard', () => {
     })
     const req = mockReq()
     const res = mockRes()
-    const next = jest.fn()
+    const next = vi.fn()
     await ctx.authGuard(req, res, next)
     expect(next).toHaveBeenCalled()
   })
@@ -231,7 +226,7 @@ describe('authGuard', () => {
     })
     const req = mockReq({ headers: {} })
     const res = mockRes()
-    const next = jest.fn()
+    const next = vi.fn()
 
     await ctx.authGuard(req, res, next)
 
@@ -252,7 +247,7 @@ describe('authGuard', () => {
     })
     const req = mockReq({ method: 'HEAD' })
     const res = mockRes()
-    await ctx.authGuard(req, res, jest.fn())
+    await ctx.authGuard(req, res, vi.fn())
     expect(res._status).toBe(401)
     expect(res._ended).toBe(true)
   })
@@ -260,9 +255,8 @@ describe('authGuard', () => {
   it('attaches user and sets X-User-ID on successful verification', async () => {
     const { createAuthKit } = mod
     // Mock jose jwtVerify and JWKSet to bypass network
-    const jose = reqr('jose')
-    const origJwtVerify = jose.jwtVerify
-    jose.jwtVerify = jest.fn().mockResolvedValue({
+    const jose: any = await import('jose')
+    vi.mocked(jose.jwtVerify).mockResolvedValue({
       payload: { email: 'user@example.com' },
     })
 
@@ -276,7 +270,7 @@ describe('authGuard', () => {
 
     const req = mockReq({ headers: { authorization: 'Bearer abc.def.ghi' } as any })
     const res = mockRes()
-    const next = jest.fn()
+    const next = vi.fn()
 
     await ctx.authGuard(req, res, next)
 
@@ -285,7 +279,7 @@ describe('authGuard', () => {
     expect(res._headers['X-User-ID']).toBe('user@example.com')
 
     // restore
-    jose.jwtVerify = origJwtVerify
+    expect(vi.mocked(jose.jwtVerify)).toHaveBeenCalled()
   })
 })
 
