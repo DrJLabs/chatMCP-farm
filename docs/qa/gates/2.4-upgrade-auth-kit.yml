@@ -1,0 +1,65 @@
+# Generated from qa-gate-template-v1
+schema: 1
+story: "2.4"
+story_title: "Upgrade Auth Kit Peer Dependencies and Documentation"
+gate: "PASS"
+status_reason: "Auth kit peers now target Express 5 / jose 6, workspace regression helper added, and documentation refreshed; all QA scenarios executed successfully."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-24T10:46:00Z"
+waiver:
+  active: false
+  notes: null
+  expires: null
+  owner: null
+  scope: null
+top_issues: []
+risk_summary:
+  totals:
+    critical: 0
+    high: 0
+    medium: 1
+    low: 1
+  highest:
+    id: OPS-001
+    score: 4
+    title: "Regression helper adoption across all contributors"
+  recommendations:
+    must_fix:
+      - "Ensure CI pipelines adopt npm run postbump:test prior to dependency releases"
+    monitor:
+      - "Track Node runtime guard messaging for teams upgrading from Node 20.18 or lower"
+
+test_design:
+  scenarios_total: 9
+  by_level:
+    unit: 2
+    integration: 6
+    e2e: 1
+  by_priority:
+    p0: 6
+    p1: 2
+    p2: 1
+  coverage_gaps: []
+trace:
+  totals:
+    requirements: 4
+    full: 4
+    partial: 0
+    none: 0
+  planning_ref: 'docs/qa/assessments/2.4-test-design-20250924.md'
+  uncovered: []
+  notes: 'docs/qa/assessments/2.4-risk-20250924.md'
+nfr_validation:
+  _assessed: [security, performance, reliability, maintainability]
+  security:
+    status: PASS
+    notes: '`jose@6` token verification covered via unit tests; README documents runtime requirements.'
+  performance:
+    status: PASS
+    notes: 'Workspace helper adds <2s runtime; acceptable for post-bump workflow.'
+  reliability:
+    status: PASS
+    notes: 'Build + postbump helper + npm ls checks succeed on Node 22.'
+  maintainability:
+    status: PASS
+    notes: 'Tech stack/coding standards updated; follow-up entry closed with Express 5 baseline recorded.'

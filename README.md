@@ -44,9 +44,9 @@ A reusable workspace for building OAuth-protected Model Context Protocol servers
 5. **Smoke tests**
    ```bash
    npm run build --workspace <service>
- npm run smoke --workspace <service>
- npm run smoke:sse --workspace <service>   # when ENABLE_SSE=true
-  ```
+   npm run smoke --workspace <service>
+   npm run smoke:sse --workspace <service>   # when ENABLE_SSE=true
+   ```
 
 ### Guardrails
 
@@ -57,6 +57,16 @@ npm run guard
 ```
 
 This executes `scripts/check-inline-secrets.mjs` (blocks inline secrets / deprecated flags) followed by `scripts/check-compose-profile.sh` (runs `COMPOSE_PROFILES=mcp-test-server scripts/compose.sh --profile mcp-test-server config`). `npm test` automatically invokes the same guardrails ahead of workspace tests.
+
+### Post-bump regression helper
+
+Run the workspace-wide regression helper after dependency upgrades to ensure every package still builds and its tests pass:
+
+```bash
+npm run postbump:test
+```
+
+The helper requires Node.js 20.19+ (the workspace standard is Node 22 LTS) because `jose@6` and Express 5 rely on native `require(esm)` support. Passing extra flags forwards them to `npm run test --workspaces --if-present` (for example, `npm run postbump:test -- --workspace packages/mcp-auth-kit`).
 
 ## Adding a New MCP Service
 
