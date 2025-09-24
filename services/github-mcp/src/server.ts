@@ -2,7 +2,7 @@ import { createApp } from './app.js'
 
 const { app, envConfig } = await createApp()
 
-const bindHost = envConfig.MCP_BIND_HOST ?? '127.0.0.1'
+const bindHost = envConfig.MCP_BIND_HOST
 const port = envConfig.PORT
 
 app.listen(port, bindHost, () => {

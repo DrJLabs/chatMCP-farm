@@ -21,20 +21,20 @@ const diagnosticsAuthInfoSchema = z
     expiresAt: z.number().optional(),
     extra: z.record(z.unknown()).optional(),
   })
-  .strict()
+  .passthrough()
 
 const diagnosticsRequestInfoSchema = z
   .object({
     headers: z.union([z.instanceof(Headers), headerBagSchema]).optional(),
   })
-  .strict()
+  .passthrough()
 
 const diagnosticsExtraSchema = z
   .object({
     authInfo: diagnosticsAuthInfoSchema.optional(),
     requestInfo: diagnosticsRequestInfoSchema.optional(),
   })
-  .strict()
+  .passthrough()
 
 type DiagnosticsAuthInfo = z.infer<typeof diagnosticsAuthInfoSchema>
 type DiagnosticsRequestInfo = z.infer<typeof diagnosticsRequestInfoSchema>

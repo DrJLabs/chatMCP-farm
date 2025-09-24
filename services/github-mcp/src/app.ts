@@ -39,6 +39,15 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
 
   const transports = new Map<string, StreamableHTTPServerTransport>()
 
+  type TransportHandleArgs = Parameters<StreamableHTTPServerTransport['handleRequest']>
+  type TransportRequest = TransportHandleArgs[0]
+  type TransportResponse = TransportHandleArgs[1]
+  type TransportBody = TransportHandleArgs[2]
+
+  const toTransportRequest = (req: Request): TransportRequest => req as unknown as TransportRequest
+  const toTransportResponse = (res: Response): TransportResponse => res as unknown as TransportResponse
+  const toTransportBody = (body: unknown): TransportBody => body as TransportBody
+
   morgan.token('authFlag', req => (req.headers.authorization ? 'present' : 'absent'))
   app.use(morgan(':date[iso] :remote-addr :method :url :status :res[content-length] auth=:authFlag'))
 
@@ -119,55 +128,69 @@ export async function createApp(options: CreateAppOptions = {}): Promise<CreateA
     res.status(204).end()
   })
 
+  const getSessionId = (req: Request): string | undefined => {
+    const header = req.headers['mcp-session-id']
+    if (Array.isArray(header)) return header[0]
+    return header as string | undefined
+  }
+
+  const withExistingTransport = (
+    label: string,
+    handler: (req: Request, res: Response, transport: StreamableHTTPServerTransport) => Promise<void> | void,
+  ) => {
+    return async (req: Request, res: Response) => {
+      const sid = getSessionId(req)
+      if (!sid) {
+        res.status(400).json({ error: 'missing_session' })
+        return
+      }
+      const transport = transports.get(sid)
+      if (!transport) {
+        res.status(400).json({ error: 'invalid_session' })
+        return
+      }
+      try {
+        await handler(req, res, transport)
+      } catch (err) {
+        console.error(`Streamable ${label} error`, err)
+        if (!res.headersSent) res.status(500).json({ error: 'internal_error' })
+      }
+    }
+  }
+
   app.post('/mcp', authGuard, mcpHeadersMiddleware, async (req: Request, res: Response) => {
     try {
-      const sid = req.headers['mcp-session-id'] as string | undefined
+      const sid = getSessionId(req)
       const existingTransport = sid ? transports.get(sid) : undefined
       const transport = existingTransport ?? (await createTransport())
-      await transport.handleRequest(req as any, res as any, (req as any).body)
+      await transport.handleRequest(
+        toTransportRequest(req),
+        toTransportResponse(res),
+        toTransportBody(req.body),
+      )
     } catch (err) {
       console.error('Streamable POST error', err)
       if (!res.headersSent) res.status(500).json({ error: 'internal_error' })
     }
   })
 
-  app.get('/mcp', authGuard, mcpHeadersMiddleware, async (req: Request, res: Response) => {
-    const sid = req.headers['mcp-session-id'] as string | undefined
-    if (!sid) {
-      res.status(400).json({ error: 'missing_session' })
-      return
-    }
-    const transport = transports.get(sid)
-    if (!transport) {
-      res.status(400).json({ error: 'invalid_session' })
-      return
-    }
-    try {
-      await transport.handleRequest(req as any, res as any)
-    } catch (err) {
-      console.error('Streamable GET error', err)
-      if (!res.headersSent) res.status(500).json({ error: 'internal_error' })
-    }
-  })
+  app.get(
+    '/mcp',
+    authGuard,
+    mcpHeadersMiddleware,
+    withExistingTransport('GET', async (req, res, transport) => {
+      await transport.handleRequest(toTransportRequest(req), toTransportResponse(res))
+    }),
+  )
 
-  app.delete('/mcp', authGuard, mcpHeadersMiddleware, async (req: Request, res: Response) => {
-    const sid = req.headers['mcp-session-id'] as string | undefined
-    if (!sid) {
-      res.status(400).json({ error: 'missing_session' })
-      return
-    }
-    const transport = transports.get(sid)
-    if (!transport) {
-      res.status(400).json({ error: 'invalid_session' })
-      return
-    }
-    try {
-      await transport.handleRequest(req as any, res as any)
-    } catch (err) {
-      console.error('Streamable DELETE error', err)
-      if (!res.headersSent) res.status(500).json({ error: 'internal_error' })
-    }
-  })
+  app.delete(
+    '/mcp',
+    authGuard,
+    mcpHeadersMiddleware,
+    withExistingTransport('DELETE', async (req, res, transport) => {
+      await transport.handleRequest(toTransportRequest(req), toTransportResponse(res))
+    }),
+  )
 
   app.head('/mcp', authGuard, async (_req, res) => {
     res.status(204).end()
