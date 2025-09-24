@@ -4,6 +4,17 @@ import process from 'node:process';
 const MIN_MAJOR = 20;
 const MIN_MINOR = 19;
 
+/**
+ * Determine whether a dot-separated Node.js version string meets the minimum supported version.
+ *
+ * Parses the `major` and `minor` components from `versionString` (format "major.minor[.patch]").
+ * Returns true when the major version is greater than MIN_MAJOR, or when the major equals MIN_MAJOR
+ * and the minor is greater than or equal to MIN_MINOR. If the major or minor components are not
+ * numeric, the function returns false.
+ *
+ * @param {string} versionString - Version string to evaluate, e.g. "20.19.0" or "20.19".
+ * @returns {boolean} True if the version is >= MIN_MAJOR.MIN_MINOR, otherwise false.
+ */
 function versionIsSupported(versionString) {
   const [majorStr, minorStr = '0'] = versionString.split('.', 3);
   const major = Number.parseInt(majorStr, 10);
