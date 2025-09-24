@@ -232,7 +232,8 @@ describe('authGuard', () => {
 
     expect(res._status).toBe(401)
     expect(res._json).toEqual({ error: 'unauthorized' })
-    expect(res._headers['WWW-Authenticate']).toMatch(/^Bearer resource_metadata=/)
+    expect(res._headers['WWW-Authenticate']).toMatch(/^Bearer\b/)
+    expect(res._headers['WWW-Authenticate']).toContain('resource_metadata=')
     expect(next).not.toHaveBeenCalled()
   })
 
