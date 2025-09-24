@@ -2,7 +2,13 @@
 
 Deterministic MCP service used to validate our docker-compose orchestration, Keycloak OAuth wiring, and ChatGPT manifest integration.
 
-## What ships in Story 1.3
+## What ships in Story 2.1
+- Express 5.1 baseline with `@modelcontextprotocol/sdk@^1.18.1` eliminates the dual Express 4 tree and removes the need for separate `@types/express*` packages.
+- Vitest 3.2 tooling (with V8 coverage) keeps the Streamable HTTP tests current; run `npm run lint|test|build --workspace mcp-test-server` plus the root `npm run test --workspaces` to validate the upgrade.
+- Baseline rollback snapshot: `package-lock.json` SHA-256 `36b95d8d77b0a2c2262ce66916b49c14b6ba3eded074520d26e503e82048a218` (taken before dependency bumps). Capture a new hash after future upgrades.
+- `scripts/cloud-test.sh` executes CI-safe installs and per-workspace Vitest runs on Node 22+, mirroring the Story 2.1 regression plan.
+
+## What shipped in Story 1.3
 - Compose profile workflow is now documented for both CLI (`--profile`) and automation (`COMPOSE_PROFILES`) paths so the service remains opt-in.
 - Smoke automation chains `scripts/healthcheck.sh` and `npm run smoke`, logging the `Accept` header, `Mcp-Session-Id`, and optional `Mcp-Protocol-Version` headers for operators.
 - README, runbook, and `.env.example` highlight secret handling with `.keycloak-env` sourcing, plus reminders to tear the profile down when finished.
@@ -71,6 +77,19 @@ curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
    - Prints the initialize response, `Mcp-Session-Id`, and (when present) `Mcp-Protocol-Version` header so you can capture evidence.
 
 Include the aggregated output in change reviews to demonstrate end-to-end readiness.
+
+## Rollback Notes (Story 2.1)
+1. Restore the pre-upgrade lockfile snapshot:
+   ```bash
+   git checkout -- package-lock.json
+   git checkout -- services/mcp-test-server/package.json
+   ```
+   (Use commit hash `36b95d8d77b0a2c2262ce66916b49c14b6ba3eded074520d26e503e82048a218` as the baseline reference.)
+2. Reinstall pinned dependencies:
+   ```bash
+   npm ci --workspaces --no-audit --no-fund
+   ```
+3. Re-run `npm run lint|test|build --workspace mcp-test-server` to confirm Express 4 compatibility if a rollback is required.
 
 ## Keycloak Notes
 - Create a confidential client with service-account enabled using the local Keycloak admin (default http://127.0.0.1:5050/auth).

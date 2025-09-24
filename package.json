@@ -19,6 +19,7 @@
     "docs:render": "node scripts/render-docs.mjs",
     "bmad:refresh": "bmad-method install -f -i codex",
     "bmad:list": "bmad-method list:agents",
-    "bmad:validate": "bmad-method validate"
+    "bmad:validate": "bmad-method validate",
+    "test:ci": "bash scripts/cloud-test.sh"
   }
 }

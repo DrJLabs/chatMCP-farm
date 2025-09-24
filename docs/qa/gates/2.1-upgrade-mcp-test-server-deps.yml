@@ -1,0 +1,67 @@
+# Generated from qa-gate-template-v1
+schema: 1
+story: "2.1"
+story_title: "Upgrade MCP Test Server Dependency Stack"
+gate: "PASS"
+status_reason: "Express 5 migration validated through Supertest + smoke runs; residual Express 4 types only via shared auth kit and tracked for Story 2.4."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-24T04:50:00Z"
+waiver:
+  active: false
+top_issues:
+  - id: AC1-types
+    description: "@types/express@4 still referenced by shared mcp-auth-kit until Story 2.4 peers update."
+    resolution: "Monitor npm ls @types/express in CI; remediate during Story 2.4."
+risk_summary:
+  totals:
+    critical: 0
+    high: 2
+    medium: 1
+    low: 1
+  highest:
+    id: TECH-001
+    score: 6
+    title: "Express 5 async router changes break auth guard ordering"
+  recommendations:
+    must_fix:
+      - "Extend Supertest coverage to confirm Express 5 middleware order and auth guard behaviour"
+      - "Update Vitest config and document CLI usage to avoid coverage regressions"
+    monitor:
+      - "Validate rollback instructions with recorded lockfile hash/tag"
+      - "cloud-test.sh now fails CI if express@4 appears in the service tree or if @types/express shows up outside mcp-auth-kit"
+test_design:
+  scenarios_total: 7
+  by_level:
+    unit: 2
+    integration: 4
+    e2e: 1
+  by_priority:
+    p0: 3
+    p1: 3
+    p2: 1
+    p3: 0
+  coverage_gaps: []
+trace:
+  totals:
+    requirements: 4
+    full: 3
+    partial: 1
+    none: 0
+  planning_ref: 'docs/qa/assessments/2.1-test-design-20250924.md'
+  uncovered:
+    - AC1
+  notes: 'docs/qa/assessments/2.1-trace-20250924.md'
+nfr_validation:
+  _assessed: [security, performance, reliability, maintainability]
+  security:
+    status: PASS
+    notes: 'Auth guard regression test ensures 401 challenge before stream handling; smoke script logs event-stream payload for auditing.'
+  performance:
+    status: PASS
+    notes: 'No additional runtime cost; Vitest 3 execution remains <1s; Express async handlers align with previous footprint.'
+  reliability:
+    status: PASS
+    notes: 'Build/test/smoke workflows run locally and in root aggregate; CI script updated for Vitest 3 parity.'
+  maintainability:
+    status: PASS
+    notes: 'README documents rollback hash; coverage thresholds codified in Vitest config; follow-up for auth-kit types tracked.'

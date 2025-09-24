@@ -61,4 +61,31 @@ describe('Accept header enforcement', () => {
     expect(response.headers['mcp-session-id']).toBeTruthy()
     expect(response.headers['mcp-protocol-version']).toBe('2025-06-18')
   })
+
+  it('enforces auth guard before processing streamable payload when auth required', async () => {
+    const env = {
+      ...BASE_ENV,
+      REQUIRE_AUTH: 'true',
+    }
+    const { app } = await createApp({ env })
+
+    const response = await request(app)
+      .post('/mcp')
+      .set('Content-Type', 'application/json')
+      .set('Accept', 'application/json, text/event-stream')
+      .send({
+        jsonrpc: '2.0',
+        id: 'auth-required',
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-06-18',
+          capabilities: {},
+          clientInfo: { name: 'test', version: '0.0.1' },
+        },
+      })
+
+    expect(response.status).toBe(401)
+    expect(response.headers['www-authenticate']).toContain('Bearer')
+    expect(response.body.error).toBe('unauthorized')
+  })
 })
