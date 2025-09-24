@@ -148,20 +148,18 @@ function getHeader(
 }
 
 /**
- * Build a DiagnosticsMetadata object from ping arguments, request/execution extras, and server options.
+ * Constructs diagnostics metadata for the diagnostics.ping tool.
  *
- * Produces metadata used by the diagnostics.ping tool: includes the current timestamp, configured allowed origins,
- * an optional note from `args`, an extracted `origin` header from `extra.requestInfo.headers`, user identification,
- * and token details when `extra.authInfo` is present. If `authInfo.token` is provided the function attempts to
- * decode it as a JWT to populate `subject`, `audiences`, and `expiresAt`; if decoding fails those JWT-derived
- * fields are cleared and a warning is logged.
+ * The returned metadata always includes a timestamp and the server's configured allowed origins.
+ * It may also include a note, an extracted origin, a resolved userId, token details (scopes, clientId,
+ * resource, and, when available, subject, audiences, and expiresAt), and rate limit information.
  *
- * @param args - Optional ping input; `args.note`, if present, is copied into `note` in the metadata.
- * @param extra - Structured extra diagnostics data; may contain `authInfo` (scopes, clientId, resource, expiresAt, token)
- *                and `requestInfo.headers` (a Headers instance or header bag) used to populate token and origin fields.
+ * @param args - Ping input; `args.note`, if present, is copied into the metadata's `note` field.
+ * @param extra - Additional diagnostics data. When present, `authInfo` is used to populate token and user identification fields,
+ *                and `requestInfo.headers` is used to extract the request origin and any rate limit headers.
  * @param options - Server build options; `options.allowedOrigins` is copied into the metadata's `allowedOrigins`.
- * @returns The constructed DiagnosticsMetadata with timestamp, allowedOrigins, note, origin, userId, and optional token info.
- */
+ * @returns The assembled DiagnosticsMetadata containing timestamp, allowedOrigins, optional note, origin, userId,
+ *          optional `token` details, and optional `rateLimit` information.
 export function buildDiagnosticsPayload(
   args: PingArgs | undefined,
   extra: DiagnosticsExtra,
@@ -220,6 +218,18 @@ export function buildDiagnosticsPayload(
   return metadata
 }
 
+/**
+ * Parses rate-limit related HTTP headers into a structured rate-limit object.
+ *
+ * @param headers - A Headers instance or header bag to read rate-limit headers from.
+ * @returns An object containing parsed rate-limit fields when any rate-limit header is present; `undefined` if none are present.
+ *
+ * The returned object shape:
+ * - `limit` — parsed integer from `x-ratelimit-limit` or `undefined` if missing or invalid.
+ * - `remaining` — parsed integer from `x-ratelimit-remaining` or `undefined` if missing or invalid.
+ * - `resetAt` — ISO 8601 timestamp computed from `x-ratelimit-reset` interpreted as epoch seconds, or `undefined` if missing or invalid.
+ * - `retryAfter` — raw string from `retry-after` or `undefined` if missing.
+ */
 function extractRateLimit(headers: DiagnosticsRequestInfo['headers'] | undefined) {
   const limit = getHeader(headers, 'x-ratelimit-limit')
   const remaining = getHeader(headers, 'x-ratelimit-remaining')
