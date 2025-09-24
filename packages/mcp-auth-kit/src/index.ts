@@ -63,7 +63,7 @@ export function loadAuthKitOptionsFromEnv(env: NodeJS.ProcessEnv = process.env):
     manifestDescriptionHuman: env.MCP_DESCRIPTION_HUMAN,
     manifestDescriptionModel: env.MCP_DESCRIPTION_MODEL,
     enableStreamable: env.ENABLE_STREAMABLE ? env.ENABLE_STREAMABLE.toLowerCase() !== 'false' : true,
-    enableLegacySse: env.ENABLE_SSE ? env.ENABLE_SSE.toLowerCase() !== 'false' : true,
+    enableLegacySse: env.ENABLE_SSE ? env.ENABLE_SSE.toLowerCase() !== 'false' : false,
     requireAuth: env.REQUIRE_AUTH ? env.REQUIRE_AUTH.toLowerCase() !== 'false' : true,
     debugHeaders: env.DEBUG_HEADERS ? env.DEBUG_HEADERS.toLowerCase() === 'true' : false,
   }
@@ -74,10 +74,13 @@ export function createAuthKit(options: AuthKitOptions): AuthKitContext {
     ...options,
     resourceUrl: stripTrailingSlash(options.resourceUrl),
     issuer: stripTrailingSlash(options.issuer),
-    audiences: options.audiences.length > 0 ? options.audiences : [options.resourceUrl],
+    audiences:
+      options.audiences.length > 0
+        ? options.audiences
+        : [stripTrailingSlash(options.resourceUrl)],
     allowedOrigins: Array.from(new Set([...DEFAULT_ALLOWED_ORIGINS, ...options.allowedOrigins])).filter(Boolean),
     enableStreamable: options.enableStreamable ?? true,
-    enableLegacySse: options.enableLegacySse ?? true,
+    enableLegacySse: options.enableLegacySse ?? false,
     requireAuth: options.requireAuth ?? true,
   }
 

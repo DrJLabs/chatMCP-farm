@@ -53,7 +53,7 @@ export const AUTH_ENV_VARS: AuthEnvVariable[] = [
     name: 'ENABLE_SSE',
     description: 'Expose legacy Server-Sent Events transport (false to disable).',
     required: false,
-    defaultValue: 'true',
+    defaultValue: 'false',
   },
   {
     name: 'REQUIRE_AUTH',

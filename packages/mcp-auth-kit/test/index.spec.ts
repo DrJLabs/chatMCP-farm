@@ -11,7 +11,7 @@ import type { Request, Response, NextFunction } from 'express'
 // Use dynamic import to avoid ESM/CJS interop pitfalls in mixed setups
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import { createRequire } from 'module'
+import { createRequire } from 'node:module'
 const reqr = typeof createRequire === 'function' ? createRequire(import.meta?.url || __filename) : require
 
 // Import from source; adjust path if package build structure differs
@@ -73,8 +73,7 @@ describe('loadAuthKitOptionsFromEnv', () => {
     } as NodeJS.ProcessEnv
     const { loadAuthKitOptionsFromEnv } = mod
     const opts = loadAuthKitOptionsFromEnv(env)
-    expect(opts.resourceUrl).toBe('https://example.com/mcp') // strip in createAuthKit; here default includes trailing but provided contains; function keeps as-is
-    // Note: loadAuthKitOptionsFromEnv itself does not strip trailing slash; ensure raw values pass through
+    // loadAuthKitOptionsFromEnv does not strip trailing slash; ensure raw values pass through
     expect(opts.resourceUrl).toBe('https://example.com/mcp/') // raw from env in loader
     expect(opts.issuer).toBe('https://issuer.example.com/')
     expect(opts.audiences).toEqual(['a1','a2','a3'])
@@ -97,7 +96,7 @@ describe('loadAuthKitOptionsFromEnv', () => {
     expect(opts.audiences).toEqual([])
     expect(opts.allowedOrigins).toEqual([])
     expect(opts.enableStreamable).toBe(true)
-    expect(opts.enableLegacySse).toBe(true)
+    expect(opts.enableLegacySse).toBe(false)
     expect(opts.requireAuth).toBe(true)
     expect(opts.debugHeaders).toBe(false)
   })
@@ -128,14 +127,14 @@ describe('createAuthKit: config resolution', () => {
     })
     expect(ctx.config.resourceUrl).toBe('https://svc.example.com/mcp')
     expect(ctx.config.issuer).toBe('https://issuer.example.com')
-    // audiences default to [resourceUrl] if empty on input
-    expect(ctx.config.audiences).toEqual(['https://svc.example.com/mcp/'])
+    // audiences default to normalized resourceUrl when none provided
+    expect(ctx.config.audiences).toEqual(['https://svc.example.com/mcp'])
     // allowedOrigins merged with defaults and deduped
     expect(ctx.config.allowedOrigins).toEqual(
       expect.arrayContaining(['https://chatgpt.com','https://chat.openai.com','https://foo.com'])
     )
     expect(ctx.config.requireAuth).toBe(true)
-    expect(ctx.config.enableLegacySse).toBe(true)
+    expect(ctx.config.enableLegacySse).toBe(false)
     expect(ctx.config.enableStreamable).toBe(true)
   })
 })
@@ -367,7 +366,7 @@ describe('utility functions', () => {
   it('parseCsv trims and filters empties', () => {
     const { parseCsv } = mod
     expect(parseCsv('a, b, , c')).toEqual(['a','b','c'])
-    expect(parseCsv('')).toEqual([''])
+    expect(parseCsv('')).toEqual([])
   })
 
   it('firstValue returns the first non-empty string', () => {

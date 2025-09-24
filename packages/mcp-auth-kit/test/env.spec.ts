@@ -40,7 +40,7 @@ describe('summarizeAuthEnv', () => {
       expect.objectContaining({ value: 'true', source: 'default' })
     )
     expect(byName(res, 'ENABLE_SSE')).toEqual(
-      expect.objectContaining({ value: 'true', source: 'default' })
+      expect.objectContaining({ value: 'false', source: 'default' })
     )
     expect(byName(res, 'REQUIRE_AUTH')).toEqual(
       expect.objectContaining({ value: 'true', source: 'default' })
