@@ -12,26 +12,29 @@
     "start": "node dist/server.js",
     "smoke": "tsx src/smoke.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:unit": "vitest run",
+    "test:integration": "vitest run tests/integration --reporter=default"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.18.0",
+    "@modelcontextprotocol/sdk": "^1.18.1",
     "cors": "^2.8.5",
-    "express": "^4.19.2",
+    "express": "^5.1.0",
     "mcp-auth-kit": "file:../../packages/mcp-auth-kit",
     "morgan": "^1.10.0",
-    "zod": "^3.23.8"
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "tsx": "^4.19.1",
-    "typescript": "^5.6.2",
-    "@types/node": "^22.7.4",
-    "@types/express": "^4.17.21",
+    "typescript": "^5.6.3",
+    "@types/node": "^22.9.0",
     "@types/cors": "^2.8.17",
     "@types/morgan": "^1.9.9",
-    "supertest": "^7.0.0",
-    "vitest": "^1.6.0",
-    "@types/supertest": "^2.0.16"
+    "supertest": "^7.1.1",
+    "vitest": "^3.2.4",
+    "@vitest/coverage-v8": "^3.2.4",
+    "get-port": "^7.0.0",
+    "node-fetch": "^3.3.2"
   },
   "description": "Deterministic MCP test service used for OAuth, compose, and ChatGPT smoke flows"
 }
