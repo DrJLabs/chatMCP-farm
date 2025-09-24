@@ -19,51 +19,41 @@ fi
 W="services/mcp-test-server"
 if [ -d "$W" ] && [ -f "$W/package.json" ]; then
   node - <<'JS'
-const fs=require('fs'), p='services/mcp-test-server/package.json';
-const pkg=JSON.parse(fs.readFileSync(p,'utf8'));
-pkg.devDependencies=pkg.devDependencies||{};
-const currentVitest=(pkg.devDependencies.vitest||'').match(/\d+/);
-const vitestMajor=currentVitest?Number(currentVitest[0]):3;
-const vitestVersion=vitestMajor>=3?'^3.2.4':'^1.6.1';
-const coverageVersion=vitestMajor>=3?'^3.2.4':'^1.6.1';
-const want={
-  vitest: vitestVersion,
-  '@vitest/coverage-v8': coverageVersion,
+const fs = require('fs');
+const p = 'services/mcp-test-server/package.json';
+const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
+const devDeps = pkg.devDependencies || {};
+const scripts = pkg.scripts || {};
+const wantDeps = {
+  vitest: '^3.2.4',
+  '@vitest/coverage-v8': '^3.2.4',
   'get-port': '^7.0.0',
   'node-fetch': '^3.3.2',
   supertest: '^7.1.1'
 };
-let changed=false;
-for(const [k,v] of Object.entries(want)){
-  if(pkg.devDependencies[k]!==v){
-    pkg.devDependencies[k]=v;
-    changed=true;
+const wantScripts = ['test', 'test:unit', 'test:integration'];
+const issues = [];
+
+for (const [dep, version] of Object.entries(wantDeps)) {
+  if (devDeps[dep] !== version) {
+    issues.push(`- devDependency "${dep}" should be "${version}", but is "${devDeps[dep]}"`);
   }
 }
-pkg.scripts=pkg.scripts||{};
-if(!pkg.scripts['test']){ pkg.scripts['test']='vitest run'; changed=true; }
-if(!pkg.scripts['test:unit']){ pkg.scripts['test:unit']='vitest run'; changed=true; }
-if(!pkg.scripts['test:integration']){ pkg.scripts['test:integration']='vitest run tests/integration --reporter=default'; changed=true; }
-if(changed){
-  fs.writeFileSync(p, JSON.stringify(pkg,null,2)+"\n");
+
+for (const script of wantScripts) {
+  if (!scripts[script]) {
+    issues.push(`- script "${script}" is missing.`);
+  }
+}
+
+if (issues.length > 0) {
+  console.error(`ERROR: ${p} is not configured correctly for CI:\n` + issues.join('\n'));
+  process.exit(1);
 }
 JS
-  npm i -w "$W" --no-audit --no-fund
   if [ ! -f "$W/vitest.config.ts" ]; then
-    cat > "$W/vitest.config.ts" <<'TS'
-import { defineConfig } from "vitest/config";
-export default defineConfig({
-  test: {
-    environment: "node",
-    clearMocks: true, mockReset: true, restoreMocks: true,
-    coverage: {
-      provider: "v8", reporter: ["text","html","json"], reportsDirectory: "./coverage",
-      all: true, include: ["src/**"], exclude: ["**/*.d.ts","test/**","dist/**"],
-      thresholds: { lines: 80, functions: 80, branches: 75, statements: 80 }
-    }
-  }
-});
-TS
+    echo "ERROR: $W/vitest.config.ts is missing." >&2
+    exit 1
   fi
 fi
 
