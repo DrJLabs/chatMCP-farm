@@ -7,7 +7,7 @@ services:
       context: ${MCP_BUILD_CONTEXT:-..}
       dockerfile: ${MCP_DOCKERFILE:-services/filesystem-mcp/Bridge.Dockerfile}
     env_file:
-      - ./services/filesystem-mcp/.env
+      - ./.env
     environment:
       FS_ALLOWED: ${FS_ALLOWED:-/projects:/VAULTS}
       ALLOW_WRITE: ${ALLOW_WRITE:-false}
