@@ -10,7 +10,7 @@ Baseline MCP service scaffold built on Express 5.1, `@modelcontextprotocol/sdk@1
 - Smoke script (`npm run smoke`) that exercises the Streamable HTTP endpoint and logs session headers.
 
 ## Environment setup
-1. Copy `.env.example` to `.env` and update the placeholders (issuer, audience, resource URL, allowed origins, bridge settings).
+1. Copy `.env.example` to `.env` and update the placeholders (issuer, audience, resource URL, allowed origins, bridge settings). Set `GITHUB_MCP_PUBLIC_HOST` in the repo-level `.env` (see root `.env.example`) so Traefik routes requests to the correct public hostname.
 2. Provide a GitHub personal access token (classic or fine-grained) with the scopes required by your toolsets via `GITHUB_TOKEN`. The bridge container injects this value when launching `github-mcp-server`.
 3. Keep confidential values (e.g., Keycloak client credentials) inside `.keycloak-env` and source them before running scripts.
 4. Default binding listens on `0.0.0.0` for container networking. Restrict ingress via Traefik/compose and tighten `MCP_ALLOWED_ORIGINS` after a security review.

@@ -80,7 +80,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=${MCP_NETWORK_EXTERNAL:-traefik}
-      - traefik.http.routers.github-mcp.rule=Host(`${MCP_PUBLIC_HOST:-mcp-service.example.com}`)
+      - traefik.http.routers.github-mcp.rule=Host(`${GITHUB_MCP_PUBLIC_HOST:-mcp-service.example.com}`)
       - traefik.http.routers.github-mcp.entrypoints=websecure
       - traefik.http.routers.github-mcp.tls=true
       - traefik.http.services.github-mcp.loadbalancer.server.port=${PORT:-8770}
