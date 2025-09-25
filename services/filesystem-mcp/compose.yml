@@ -1,0 +1,45 @@
+services:
+  filesystem-mcp-bridge:
+    # Opt-in via `scripts/compose.sh --profile filesystem-mcp …` or COMPOSE_PROFILES=filesystem-mcp.
+    profiles:
+      - filesystem-mcp
+    build:
+      context: ${MCP_BUILD_CONTEXT:-..}
+      dockerfile: ${MCP_DOCKERFILE:-services/filesystem-mcp/Bridge.Dockerfile}
+    env_file:
+      - ./.env
+    environment:
+      FS_ALLOWED: "${FS_ALLOWED:?FS_ALLOWED must be set in services/filesystem-mcp/.env}"
+      ALLOW_WRITE: ${ALLOW_WRITE:?ALLOW_WRITE must be set in services/filesystem-mcp/.env}
+      ENABLE_ROOTS: ${ENABLE_ROOTS:?ENABLE_ROOTS must be set in services/filesystem-mcp/.env}
+      SSE_PORT: ${SSE_PORT:?SSE_PORT must be set in services/filesystem-mcp/.env}
+    volumes:
+      - type: bind
+        source: ${HOST_PROJECTS_ROOT:-/srv/projects}
+        target: /projects
+        read_only: ${PROJECTS_READ_ONLY:-true}
+      - type: bind
+        source: ${HOST_VAULTS_ROOT:-/srv/vaults}
+        target: /VAULTS
+        read_only: ${VAULTS_READ_ONLY:-true}
+    deploy:
+      resources:
+        limits:
+          cpus: "${MCP_CPU_LIMIT:-0.50}"
+          memory: ${MCP_MEMORY_LIMIT:-256M}
+        reservations:
+          memory: ${MCP_MEMORY_RESERVATION:-128M}
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${MCP_NETWORK_EXTERNAL:-traefik}
+      - traefik.http.routers.filesystem-mcp.rule=Host(`${MCP_PUBLIC_HOST:-fs-mcp.local}`)
+      - traefik.http.routers.filesystem-mcp.entrypoints=websecure
+      - traefik.http.routers.filesystem-mcp.tls=true
+      - traefik.http.services.filesystem-mcp.loadbalancer.server.port=${SSE_PORT:-12010}
+
+networks:
+  proxy:
+    external: true
+    name: ${MCP_NETWORK_EXTERNAL:-traefik}

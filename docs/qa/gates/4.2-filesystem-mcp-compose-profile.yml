@@ -1,0 +1,67 @@
+# <!-- Powered by BMAD™ Core -->
+schema: 1
+story: "4.2"
+story_title: "Story 4.2: Filesystem MCP Compose Profile"
+gate: "PASS"
+status_reason: "Compose profile implemented with evidence for config render, read-only mounts, override warnings, and smoke validation; maintain monitoring for write-toggle approvals."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-25T23:15:00Z"
+waiver: { active: false }
+
+top_issues:
+  - id: SEC-4.2-001
+    title: "Write toggles enable host mutation"
+    action: "Keep overrides disabled; gather warning-banner evidence prior to production."
+
+risk_summary:
+  totals:
+    critical: 0
+    high: 1
+    medium: 2
+    low: 1
+  highest:
+    id: SEC-4.2-001
+    score: 6
+    title: "`.env` overrides enable write/root access without approval"
+  recommendations:
+    must_fix: []
+    monitor:
+      - "Retain warning-banner evidence whenever ALLOW_WRITE/ENABLE_ROOTS toggles are enabled."
+      - "Automate guard ensuring `.env.example` defaults keep write toggles false and mounts read-only."
+
+test_design:
+  scenarios_total: 9
+  by_level:
+    unit: 2
+    integration: 5
+    e2e: 2
+  by_priority:
+    p0: 5
+    p1: 3
+    p2: 1
+  coverage_gaps: []
+
+nfr_validation:
+  _assessed: [security, performance, reliability, maintainability]
+  security:
+    status: PASS
+    notes: "Read-only mounts enforced; warning banners and approval guidance documented for write toggles."
+  performance:
+    status: PASS
+    notes: "Compose bring-up and smoke script confirm port 12010 readiness without additional latency."
+  reliability:
+    status: PASS
+    notes: "Config render, profile up/down, override sandbox, and smoke script cover startup and teardown paths."
+  maintainability:
+    status: PASS
+    notes: "Compose fragment follows template patterns; `.env.example` centralises operational toggles."
+
+trace:
+  totals:
+    requirements: 5
+    full: 5
+    partial: 0
+    none: 0
+  planning_ref: 'docs/qa/assessments/4.2-test-design-20250925.md'
+  uncovered: []
+  notes: 'docs/qa/assessments/4.2-trace-20250925.md'
