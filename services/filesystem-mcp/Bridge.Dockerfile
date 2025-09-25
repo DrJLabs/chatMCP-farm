@@ -16,9 +16,8 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends git pkg-config libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN git clone --depth=1 https://github.com/rust-mcp-stack/rust-mcp-filesystem.git . \
-    && git fetch --depth=1 origin "$FILESYSTEM_MCP_REF" \
-    && git checkout "$FILESYSTEM_MCP_REF"
+RUN git clone --filter=blob:none https://github.com/rust-mcp-stack/rust-mcp-filesystem.git . \
+    && git checkout --detach "$FILESYSTEM_MCP_REF"
 
 # Build a reproducible, optimized binary.
 RUN cargo build --release --locked

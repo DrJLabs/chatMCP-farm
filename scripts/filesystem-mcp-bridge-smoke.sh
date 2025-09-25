@@ -32,7 +32,7 @@ cleanup() {
 trap cleanup EXIT
 docker run --rm -d --name "$container_name" -e FS_ALLOWED=/tmp "$IMAGE_TAG" >/dev/null
 
-docker exec "$container_name" python3 - <<'PY'
+timeout 15 docker exec "$container_name" python3 - <<'PY'
 import os
 import socket
 import sys
@@ -51,6 +51,16 @@ while time.time() < deadline:
 print(f"Failed to connect to localhost:{port} inside container", file=sys.stderr)
 sys.exit(1)
 PY
+
+status=$?
+if [[ $status -ne 0 ]]; then
+  if [[ $status -eq 124 ]]; then
+    echo "Container socket test timed out" >&2
+  else
+    echo "Container socket test failed" >&2
+  fi
+  exit 1
+fi
 
 cleanup
 trap - EXIT
