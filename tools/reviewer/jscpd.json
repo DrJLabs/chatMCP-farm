@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/kucherenko/jscpd/master/schemas/.jscpd.json",
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.bmad-cache/**",
+    "**/artifacts/**",
+    "**/coverage/**"
+  ],
+  "minTokens": 50,
+  "maxSize": "200kb",
+  "languages": ["javascript", "typescript", "python", "java", "go", "csharp", "ruby", "php"]
+}
