@@ -10,9 +10,10 @@ Baseline MCP service scaffold built on Express 5.1, `@modelcontextprotocol/sdk@1
 - Smoke script (`npm run smoke`) that exercises the Streamable HTTP endpoint and logs session headers.
 
 ## Environment setup
-1. Copy `.env.example` to `.env` and update the placeholders (issuer, audience, resource URL, allowed origins).
-2. Keep confidential values (e.g., Keycloak client credentials) inside `.keycloak-env` and source them before running scripts.
-3. Default binding listens on `0.0.0.0` for container networking. Restrict ingress via Traefik/compose and tighten `MCP_ALLOWED_ORIGINS` after a security review.
+1. Copy `.env.example` to `.env` and update the placeholders (issuer, audience, resource URL, allowed origins, bridge settings).
+2. Provide a GitHub personal access token (classic or fine-grained) with the scopes required by your toolsets via `GITHUB_TOKEN`. The bridge container injects this value when launching `github-mcp-server`.
+3. Keep confidential values (e.g., Keycloak client credentials) inside `.keycloak-env` and source them before running scripts.
+4. Default binding listens on `0.0.0.0` for container networking. Restrict ingress via Traefik/compose and tighten `MCP_ALLOWED_ORIGINS` after a security review.
 
 ## Running locally
 ```bash
@@ -26,6 +27,9 @@ COMPOSE_PROFILES=github-mcp ./scripts/compose.sh up --build
 - The profile keeps the service disabled unless explicitly requested.
 - Ensure the external network referenced by `.env` exists beforehand: `docker network inspect ${MCP_NETWORK_EXTERNAL:-traefik} || docker network create ${MCP_NETWORK_EXTERNAL:-traefik}`.
 - Health endpoint: `GET http://127.0.0.1:8770/healthz`.
+- Bridge readiness: `GET http://127.0.0.1:9300/healthz` (JSON response from the wrapper process).
+- Bridge metrics: `GET http://127.0.0.1:9300/metrics` (Prometheus exposition format).
+- Shared bridge log volume: `${MCP_BRIDGE_LOG_VOLUME}` mounted at `/var/log/bridge/bridge.log`. The primary service exposes a tail via `GET /observability/bridge/logs` when authenticated.
 - Tear down with `./scripts/compose.sh --profile github-mcp down --remove-orphans` when finished.
 
 Once dependencies are updated, record the current `package-lock.json` hash (e.g., `sha256sum package-lock.json`) so you can revert quickly if alignment work needs rollback.
@@ -44,6 +48,17 @@ curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
      -H 'Content-Type: application/json' \
      -X POST http://127.0.0.1:8770/mcp \
      -d '{"jsonrpc":"2.0","id":1,"method":"call","params":{"sessionId":null,"toolName":"diagnostics.ping","arguments":{"note":"manual check"}}}' | jq '.result.content[0].text' -r
+
+# Bridge parity check (upstream github-mcp-server proxy)
+curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
+     -H 'Accept: application/json' \
+     -H 'Content-Type: application/json' \
+     -H 'mcp-session-id: bridge-parity' \
+     -X POST http://127.0.0.1:8770/mcp \
+     -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{"client":{"name":"manual","version":"1.0"}}}' | jq '.result.tools | length'
+
+# Tail bridge logs directly
+docker compose --profile github-mcp logs -f github-mcp-bridge
 ```
 
 ## Smoke workflow
@@ -79,6 +94,17 @@ npm run test --workspaces
 ```
 
 Vitest coverage uses the V8 provider. Coverage reports are written to `services/github-mcp/coverage/`.
+
+Bridge observability quick checks:
+
+```bash
+# Prometheus metrics emitted by the bridge wrapper
+curl -s http://127.0.0.1:9300/metrics
+
+# Aggregated log tail exposed by the primary service (requires auth if REQUIRE_AUTH=true)
+curl -s -H "Authorization: Bearer $ACCESS_TOKEN" -H 'Accept: text/plain' \
+  http://127.0.0.1:8770/observability/bridge/logs | tail
+```
 
 ## Keycloak notes
 - Create a confidential client with service-account enabled using the local Keycloak admin (default [http://127.0.0.1:5050/auth](http://127.0.0.1:5050/auth)).

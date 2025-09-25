@@ -7,3 +7,4 @@
 ## Closed Items
 
 - **Align `mcp-auth-kit` Express 5 peers (Story 2.4)** — Peer range bumped to Express 5, `jose@^6.1.0` applied, workspace helper added, and Express 4 warnings removed via `npm ls`. Date closed: 2025-09-24. Owner: Sarah (PO).
+- **Bridge Observability Metrics (Story 3.1)** — Wrapper now tails stdout/stderr to `/var/log/bridge`, publishes `/healthz` JSON plus Prometheus metrics on port 9300, and the primary service exposes `/observability/bridge/{logs,status}` for authenticated operators. Date closed: 2025-09-25. Owner: Codex (dev).

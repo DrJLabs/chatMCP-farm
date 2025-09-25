@@ -1,0 +1,70 @@
+# Generated from qa-gate-template-v1
+schema: 1
+story: "3.1"
+story_title: "GitHub MCP Bridge Integration"
+gate: "PASS"
+status_reason: "Profile build + PAT-authenticated smokes verified bridge parity (initialize/tools.list) and observability metrics; docker build checksum replayed and fallback harness captured expected rollback behaviour."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-25T04:01:00Z"
+waiver:
+  active: false
+  notes: null
+  expires: null
+  owner: null
+  scope: null
+top_issues:
+  - id: REL-3.1-001
+    description: "Bridge parity validated with PAT-enabled compose smokes; continue tracking periodic parity checks." 
+    resolution: "Record initialize/tools.list transcripts and metrics snapshots in Dev Agent Record for each upgrade cycle."
+risk_summary:
+  totals:
+    critical: 0
+    high: 2
+    medium: 3
+    low: 0
+  highest:
+    id: SEC-3.1-001
+    score: 6
+    title: "Proxy drops or mutates auth/session headers"
+  recommendations:
+    must_fix:
+      - "Execute bridge parity smokes against the actual containers to capture upstream header propagation with PAT authentication."
+      - "Verify docker image checksum script in CI to prevent supply-chain drift."
+    monitor:
+      - "Keep compose profile gated and document activation in README to avoid accidental rollout."
+      - "Track upstream/local parity drifts and log deviations in follow-ups."
+
+test_design:
+  scenarios_total: 9
+  by_level:
+    unit: 3
+    integration: 4
+    e2e: 2
+  by_priority:
+    p0: 5
+    p1: 3
+    p2: 1
+  coverage_gaps: []
+trace:
+  totals:
+    requirements: 5
+    full: 5
+    partial: 0
+    none: 0
+  planning_ref: 'docs/qa/assessments/3.1-test-design-20250925.md'
+  uncovered: []
+  notes: 'docs/qa/assessments/3.1-trace-20250925.md'
+nfr_validation:
+  _assessed: [security, performance, reliability, maintainability]
+  security:
+    status: PASS
+    notes: 'Proxy unit tests confirm header forwarding; observability endpoints remain auth-guarded.'
+  performance:
+    status: PASS
+    notes: 'Vitest suite including proxy coverage completes in ~1s with no regressions.'
+  reliability:
+    status: PASS
+    notes: 'Compose up --build smokes (with PAT) delivered initialize/tools.list parity and confirmed bridge metrics; fallback harness covers rollback.'
+  maintainability:
+    status: PASS
+    notes: 'Binary pins, README/env guidance, and observability endpoints documented; follow-up closed.'

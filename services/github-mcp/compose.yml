@@ -1,8 +1,50 @@
 services:
+  github-mcp-bridge:
+    profiles:
+      - github-mcp
+    build:
+      context: ${MCP_BUILD_CONTEXT:-..}
+      dockerfile: services/github-mcp/Bridge.Dockerfile
+      args:
+        NODE_VERSION: ${MCP_BRIDGE_NODE_IMAGE:-20.17.0-alpine3.20}
+        GITHUB_MCP_SERVER_VERSION: ${GITHUB_MCP_SERVER_VERSION:-0.15.0}
+        GITHUB_MCP_SERVER_SHA256: ${GITHUB_MCP_SERVER_SHA256:-14b72ee93f2adfbe330be116bc2387845ab2c46b9e686e5659214d7fe75a422b}
+        MCP_PROXY_VERSION: ${MCP_PROXY_VERSION:-5.6.1}
+    env_file:
+      - ./services/github-mcp/.env
+    environment:
+      - PORT=${MCP_BRIDGE_PORT:-9090}
+      - BRIDGE_METRICS_PORT=${MCP_BRIDGE_METRICS_PORT:-9300}
+      - BRIDGE_LOG_DIR=/var/log/bridge
+      - GITHUB_MCP_SERVER_ARGS=${GITHUB_MCP_SERVER_ARGS:-}
+    expose:
+      - "9090"
+      - "9300"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "node -e \"const port = process.env.BRIDGE_METRICS_PORT || 9300; const url = 'http://127.0.0.1:' + port + '/healthz'; fetch(url).then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1));\""
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - proxy
+    volumes:
+      - github-mcp-bridge-logs:/var/log/bridge
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
   github-mcp:
     # Opt-in via `scripts/compose.sh --profile github-mcp …` or COMPOSE_PROFILES=github-mcp.
     profiles:
       - github-mcp
+    depends_on:
+      github-mcp-bridge:
+        condition: service_healthy
     build:
       context: ${MCP_BUILD_CONTEXT:-..}
       dockerfile: ${MCP_DOCKERFILE:-services/github-mcp/Dockerfile}
@@ -13,6 +55,10 @@ services:
       - MCP_NAME_MODEL=${GITHUB_MCP_SERVICE_NAME_MODEL:-github-mcp}
       - MCP_DESCRIPTION_HUMAN=${GITHUB_MCP_SERVICE_DESCRIPTION:-Describe your github-mcp service}
       - MCP_DESCRIPTION_MODEL=${GITHUB_MCP_SERVICE_DESCRIPTION:-Describe your github-mcp service}
+      - MCP_UPSTREAM_URL=${MCP_UPSTREAM_URL:-http://github-mcp-bridge:9090/mcp}
+      - MCP_UPSTREAM_HEALTH_URL=${MCP_UPSTREAM_HEALTH_URL:-http://github-mcp-bridge:9300/healthz}
+      - MCP_UPSTREAM_METRICS_URL=${MCP_UPSTREAM_METRICS_URL:-http://github-mcp-bridge:9300/metrics}
+      - MCP_BRIDGE_LOG_FILE=${MCP_BRIDGE_LOG_FILE:-/var/log/bridge/bridge.log}
     healthcheck:
       test:
         - CMD-SHELL
@@ -29,6 +75,8 @@ services:
           memory: ${MCP_MEMORY_RESERVATION:-128M}
     networks:
       - proxy
+    volumes:
+      - github-mcp-bridge-logs:/var/log/bridge:ro
     labels:
       - traefik.enable=true
       - traefik.docker.network=${MCP_NETWORK_EXTERNAL:-traefik}
@@ -41,3 +89,7 @@ networks:
   proxy:
     external: true
     name: ${MCP_NETWORK_EXTERNAL:-traefik}
+
+volumes:
+  github-mcp-bridge-logs:
+    name: ${MCP_BRIDGE_LOG_VOLUME:-github-mcp-bridge-logs}
