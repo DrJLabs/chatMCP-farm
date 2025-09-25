@@ -158,6 +158,7 @@ function getHeader(
  * @param options - Server build options; `options.allowedOrigins` is copied into the metadata's `allowedOrigins`.
  * @returns The assembled DiagnosticsMetadata containing timestamp, allowedOrigins, optional note, origin, userId,
  *          optional `token` details, and optional `rateLimit` information.
+ */
 export function buildDiagnosticsPayload(
   args: PingArgs | undefined,
   extra: DiagnosticsExtra,
