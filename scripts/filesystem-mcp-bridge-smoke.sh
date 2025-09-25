@@ -23,7 +23,7 @@ echo "[filesystem-mcp] Verifying SSE port 12010 is reachable" >&2
 if command -v uuidgen >/dev/null 2>&1; then
   container_suffix=$(uuidgen | tr '[:upper:]' '[:lower:]')
 else
-  container_suffix=$(printf '%s%04x' "fallback" "$RANDOM")
+  container_suffix=$(head /dev/urandom | tr -dc 'a-z0-9' | head -c 12)
 fi
 container_name="filesystem-mcp-bridge-smoke-${container_suffix}"
 cleanup() {
