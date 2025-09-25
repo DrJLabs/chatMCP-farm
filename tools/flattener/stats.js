@@ -12,9 +12,10 @@ async function calculateStatistics(aggregatedContent, xmlFileSize, rootDir) {
   const sizes = allFiles.map((f) => f.size).sort((a, b) => a - b);
   const avgSize = sizes.length > 0 ? totalBytes / sizes.length : 0;
   const medianSize = sizes.length > 0 ? H.percentile(sizes, 50) : 0;
-  const p90 = H.percentile(sizes, 90);
-  const p95 = H.percentile(sizes, 95);
-  const p99 = H.percentile(sizes, 99);
+  const hasSizes = sizes.length > 0;
+  const p90 = hasSizes ? H.percentile(sizes, 90) : 0;
+  const p95 = hasSizes ? H.percentile(sizes, 95) : 0;
+  const p99 = hasSizes ? H.percentile(sizes, 99) : 0;
 
   const histogram = H.buildHistogram(allFiles);
   const byExtensionArr = H.aggregateByExtension(allFiles);

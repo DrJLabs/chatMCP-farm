@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const yaml = require('js-yaml');
+const semver = require('semver');
 
 const arguments_ = process.argv.slice(2);
 const bumpType = arguments_[0] || 'minor'; // default to minor
@@ -12,25 +13,12 @@ if (!['major', 'minor', 'patch'].includes(bumpType)) {
 }
 
 function bumpVersion(currentVersion, type) {
-  const [major, minor, patch] = currentVersion.split('.').map(Number);
-
-  switch (type) {
-    case 'major': {
-      return `${major + 1}.0.0`;
-    }
-    case 'minor': {
-      return `${major}.${minor + 1}.0`;
-    }
-    case 'patch': {
-      return `${major}.${minor}.${patch + 1}`;
-    }
-    default: {
-      return currentVersion;
-    }
-  }
+  const coerced = semver.valid(semver.coerce(currentVersion)) || '1.0.0';
+  const next = semver.inc(coerced, type);
+  return next || coerced;
 }
 
-async function bumpAllVersions() {
+function bumpAllVersions() {
   const updatedItems = [];
 
   // First, bump the core version (package.json)
@@ -89,8 +77,8 @@ async function bumpAllVersions() {
     }
 
     if (updatedItems.length > 0) {
-      const coreCount = updatedItems.filter((index) => index.type === 'core').length;
-      const expansionCount = updatedItems.filter((index) => index.type === 'expansion').length;
+      const coreCount = updatedItems.filter((item) => item.type === 'core').length;
+      const expansionCount = updatedItems.filter((item) => item.type === 'expansion').length;
 
       console.log(
         `\n✓ Successfully bumped ${updatedItems.length} item(s) with ${bumpType} version bump`,

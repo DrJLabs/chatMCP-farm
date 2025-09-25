@@ -95,7 +95,7 @@ ide-configurations:
       # 1. The installer creates a `BMad` folder in `.gemini/commands`.
       # 2. This adds custom commands for each agent and task.
       # 3. Type /BMad:agents:<agent-name> (e.g., "/BMad:agents:dev", "/BMad:agents:pm") or /BMad:tasks:<task-name> (e.g., "/BMad:tasks:create-doc").
-      # 4. The agent will adopt that persona for the conversation or preform the task.
+      # 4. The agent will adopt that persona for the conversation or perform the task.
   github-copilot:
     name: Github Copilot
     rule-dir: .github/chatmodes/
@@ -123,6 +123,7 @@ ide-configurations:
     name: Qwen Code
     rule-dir: .qwen/bmad-method/
     format: single-file
+    file: QWEN.md
     command-suffix: .md
     instructions: |
       # To use BMad agents with Qwen Code:

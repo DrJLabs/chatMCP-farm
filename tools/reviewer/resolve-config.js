@@ -46,7 +46,7 @@ function resolveConfig(options = {}) {
       const overrideKey = reviewerConfig.perStoryOverrideKey || '';
       if (overrideKey) {
         // naive YAML frontmatter parser
-        const frontmatterMatch = storyData.match(/^---\n([\s\S]*?)\n---/);
+        const frontmatterMatch = storyData.match(/^---\r?\n([\s\S]*?)\r?\n---/);
         if (frontmatterMatch) {
           const meta = yaml.load(frontmatterMatch[1]) || {};
           const overrideSegments = overrideKey.split('.');

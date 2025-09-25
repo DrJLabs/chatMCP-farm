@@ -1,6 +1,7 @@
 const path = require('node:path');
 const fs = require('fs-extra');
 const chalk = require('chalk');
+const semver = require('semver');
 const ora = require('ora');
 const inquirer = require('inquirer');
 const fileManager = require('./file-manager');
@@ -1911,19 +1912,12 @@ class Installer {
   }
 
   compareVersions(v1, v2) {
-    // Simple semver comparison
-    const parts1 = v1.split('.').map(Number);
-    const parts2 = v2.split('.').map(Number);
-
-    for (let index = 0; index < 3; index++) {
-      const part1 = parts1[index] || 0;
-      const part2 = parts2[index] || 0;
-
-      if (part1 > part2) return 1;
-      if (part1 < part2) return -1;
+    const a = semver.valid(semver.coerce(v1));
+    const b = semver.valid(semver.coerce(v2));
+    if (!a || !b) {
+      return 0;
     }
-
-    return 0;
+    return semver.compare(a, b);
   }
 
   async cleanupLegacyYmlFiles(installDir, spinner) {

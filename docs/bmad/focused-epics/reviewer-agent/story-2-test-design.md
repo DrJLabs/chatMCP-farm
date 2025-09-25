@@ -5,11 +5,11 @@ Designer: Quinn (Test Architect)
 
 ## Test Strategy Overview
 
-- Total test scenarios: 9
-- Unit tests: 3 (33%)
-- Integration tests: 5 (56%)
-- E2E tests: 1 (11%)
-- Priority distribution: P0: 4, P1: 3, P2: 2
+- Total test scenarios: 11
+- Unit tests: 3 (27%)
+- Integration tests: 7 (64%)
+- E2E tests: 1 (9%)
+- Priority distribution: P0: 5, P1: 5, P2: 1
 
 ## Test Scenarios by Acceptance Criteria
 
@@ -69,15 +69,15 @@ Designer: Quinn (Test Architect)
 
 ```yaml
 test_design:
-  scenarios_total: 9
+  scenarios_total: 11
   by_level:
     unit: 3
-    integration: 5
+    integration: 7
     e2e: 1
   by_priority:
-    p0: 4
-    p1: 3
-    p2: 2
+    p0: 5
+    p1: 5
+    p2: 1
   coverage_gaps: []
 ```
 

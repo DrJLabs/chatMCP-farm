@@ -5,11 +5,13 @@ const { glob } = require('glob');
 const { loadIgnore } = require('./ignoreRules.js');
 
 const pExecFile = promisify(execFile);
+const MAX_BUFFER = 64 * 1024 * 1024;
 
 async function isGitRepo(rootDir) {
   try {
     const { stdout } = await pExecFile('git', ['rev-parse', '--is-inside-work-tree'], {
       cwd: rootDir,
+      maxBuffer: MAX_BUFFER,
     });
     return (
       String(stdout || '')
@@ -25,6 +27,7 @@ async function gitListFiles(rootDir) {
   try {
     const { stdout } = await pExecFile('git', ['ls-files', '-co', '--exclude-standard'], {
       cwd: rootDir,
+      maxBuffer: MAX_BUFFER,
     });
     return String(stdout || '')
       .split(/\r?\n/)
@@ -52,7 +55,9 @@ async function discoverFiles(rootDir, options = {}) {
   if (preferGit && (await isGitRepo(rootDir))) {
     const relFiles = await gitListFiles(rootDir);
     const filteredRel = relFiles.filter((p) => filter(p));
-    return filteredRel.map((p) => path.resolve(rootDir, p));
+    if (filteredRel.length > 0) {
+      return filteredRel.map((p) => path.resolve(rootDir, p));
+    }
   }
 
   // Glob fallback

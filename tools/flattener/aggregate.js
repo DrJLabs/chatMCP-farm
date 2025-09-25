@@ -41,11 +41,12 @@ async function aggregateFileContents(files, rootDir, spinner = null) {
         results.binaryFiles.push({ path: relativePath, absolutePath: filePath, size });
       } else {
         const content = await fs.readFile(filePath, 'utf8');
+        const byteSize = Buffer.byteLength(content, 'utf8');
         results.textFiles.push({
           path: relativePath,
           absolutePath: filePath,
           content,
-          size: content.length,
+          size: byteSize,
           lines: content.split('\n').length,
         });
       }

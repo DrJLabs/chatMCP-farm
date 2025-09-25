@@ -5,7 +5,7 @@
  * This file ensures proper execution when run via npx from GitHub
  */
 
-const { execSync } = require('node:child_process');
+const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
 
@@ -25,13 +25,18 @@ if (isNpxExecution) {
     process.exit(1);
   }
 
-  try {
-    execSync(`node "${bmadScriptPath}" ${arguments_.join(' ')}`, {
-      stdio: 'inherit',
-      cwd: path.dirname(__dirname),
-    });
-  } catch (error) {
-    process.exit(error.status || 1);
+  const result = spawnSync(process.execPath, [bmadScriptPath, ...arguments_], {
+    stdio: 'inherit',
+    cwd: path.dirname(__dirname),
+  });
+
+  if (result.error) {
+    console.error('Error executing bmad.js:', result.error.message);
+    process.exit(1);
+  }
+
+  if (result.status !== 0) {
+    process.exit(result.status || 1);
   }
 } else {
   // Local execution - use installer for all commands

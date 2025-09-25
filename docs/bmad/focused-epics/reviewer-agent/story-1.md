@@ -16,7 +16,7 @@
 2. Add a Node.js script `tools/reviewer/collect-scans.js` that runs Semgrep (with diff-aware baseline commit) and Jscpd with a 60% threshold, emitting JSON and SARIF summaries.
 3. Generate churn metadata for touched files from the last 30 days (`git log`) saved beside scan results and labeled with repository slug + timestamp for correlation.
 4. Persist tooling metadata (CLI versions, execution duration, diff coverage, cache size) to `artifacts/reviewer/<timestamp>/metrics.json` for downstream reviewer weighting and telemetry.
-5. Reviewer scripts run using existing Node.js runtime without additional global installs; allow overrides via `SEMgrep_BIN` / `JSCPD_BIN` environment variables for air-gapped runners.
+5. Reviewer scripts run using existing Node.js runtime without additional global installs; allow overrides via `SEMGREP_BIN` / `JSCPD_BIN` environment variables for air-gapped runners.
 6. All artifacts write to `.bmad-cache/reviewer/{git_sha}/` to prevent collisions and mirror to `artifacts/reviewer/<timestamp>/` when executed.
 7. Workflow exit codes remain zero when scans succeed; failures surface actionable remediation tips.
 8. Semgrep and Jscpd configs live under version control (e.g., `tools/reviewer/semgrep.yaml`, `tools/reviewer/jscpd.json`) with documented ignore patterns and diff-only defaults.
@@ -25,7 +25,7 @@
 
 ## Tasks / Subtasks
 
-- [x] Author `tools/reviewer/preflight.sh` with binary checks, minimum version assertions, trusted-install warnings, cache directory bootstrap, and override support for `SEMgrep_BIN` / `JSCPD_BIN`. (AC 1,5)
+- [x] Author `tools/reviewer/preflight.sh` with binary checks, minimum version assertions, trusted-install warnings, cache directory bootstrap, and override support for `SEMGREP_BIN` / `JSCPD_BIN`. (AC 1,5)
 - [x] Implement `tools/reviewer/collect-scans.js` to orchestrate Semgrep (diff-aware baseline commit) and Jscpd (60% threshold), enforce 180s/120s timeouts, capture stdout/stderr, and serialize JSON/SARIF outputs into `.bmad-cache/reviewer/{git_sha}/`. (AC 2,6,7,8,9)
 - [x] Generate churn metadata (30-day window) with repository slug + timestamp, persist as `churn.json`, and append diff coverage and runtime metrics to `metrics.json`. (AC 3,4,6)
 - [x] Add cache-pruning utility (e.g., npm script or docs command) to keep `.bmad-cache/reviewer/` under 250 MB and document the procedure. **Owner:** Dev — **Due:** 2025-09-26 (AC 4,6,10)
@@ -41,7 +41,7 @@
 - **Configuration:**
   - Default Semgrep command `semgrep scan --config auto --baseline --sarif --json --timeout 180` with repo override path appended when present.
   - Jscpd runs via `npx jscpd@^3.5.4 --threshold 60 --gitignore --format json --output <cache>/jscpd.json`.
-  - Allow overrides via `SEMgrep_BIN` and `JSCPD_BIN` for air-gapped runners; log override usage in preflight output.
+  - Allow overrides via `SEMGREP_BIN` and `JSCPD_BIN` for air-gapped runners; log override usage in preflight output.
 - **Error handling & observability:**
   - Preflight should exit non-zero with descriptive messages when binaries missing/outdated.
   - Collect script logs JSON Lines (`log.jsonl`) capturing command, args, duration, stdout length, and exit code for QA replay.

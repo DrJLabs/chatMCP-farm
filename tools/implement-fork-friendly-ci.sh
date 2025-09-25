@@ -45,50 +45,43 @@ for file in .github/workflows/*.yml .github/workflows/*.yaml; do
         # Create temporary file
         temp_file="${file}.tmp"
         
-        # Track if file needs manual review
-        needs_review=0
-        
         # Process the file with awk
-        awk '
+        if awk '
         BEGIN {
             in_jobs = 0
             job_count = 0
             modified = 0
+            manual_review = 0
         }
-        
-        /^jobs:/ { 
+
+        /^jobs:/ {
             in_jobs = 1
             print
             next
         }
-        
+
         # Match job definitions (2 spaces + name + colon)
-        in_jobs && /^  [a-z][a-z0-9_-]*:/ {
+        in_jobs && /^  [A-Za-z_][A-Za-z0-9_-]*:/ {
             job_name = $0
             print job_name
             job_count++
-            
+
             # Look ahead for existing conditions
             getline next_line
-            
+
             # Check if next line is already an if condition
             if (next_line ~ /^    if:/) {
-                # Job already has condition - combine with fork detection
                 existing_condition = next_line
                 sub(/^    if: /, "", existing_condition)
-                
-                # Check if fork condition already exists
-                if (existing_condition !~ /github\.event\.repository\.fork/) {
-                    print "    # Fork-friendly CI: Combined with existing condition"
-                    print "    if: (" existing_condition ") && (github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == '\''true'\'')"
-                    modified++
-                } else {
-                    # Already has fork detection
+                if (existing_condition ~ /github\.event_name != '\''pull_request'\'' \|\| github\.event\.pull_request\.head\.repo\.fork != true \|\| vars\.ENABLE_CI_IN_FORK == '\''true'\''/) {
                     print next_line
+                } else {
+                    print next_line
+                    manual_review = 1
                 }
             } else if (next_line ~ /^    runs-on:/) {
                 # No condition exists, add before runs-on
-                print "    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == '\''true'\''"
+                print "    if: github.event_name != '\''pull_request'\'' || github.event.pull_request.head.repo.fork != true || vars.ENABLE_CI_IN_FORK == '\''true'\''"
                 print next_line
                 modified++
             } else {
@@ -110,27 +103,37 @@ for file in .github/workflows/*.yml .github/workflows/*.yaml; do
         
         END {
             if (modified > 0) {
-                exit 0  # Success - file was modified
-            } else {
-                exit 1  # No modifications needed
+                exit 0
             }
+            if (manual_review > 0) {
+                exit 2
+            }
+            exit 1
         }
-        ' "$file" > "$temp_file"
-        
-        # Check if modifications were made
-        if [ $? -eq 0 ]; then
+        ' "$file" > "$temp_file"; then
+            status=0
+        else
+            status=$?
+        fi
+
+        if [ $status -eq 0 ]; then
             mv "$temp_file" "$file"
             echo -e "${GREEN}✓${NC} Updated"
-            ((UPDATED_FILES++))
+            ((UPDATED_FILES+=1))
         else
             rm -f "$temp_file"
-            echo -e "${YELLOW}○${NC} No changes needed"
+            if [ $status -eq 2 ]; then
+                echo -e "${YELLOW}○${NC} Existing conditions detected - manual review required"
+                ((MANUAL_REVIEW_NEEDED+=1))
+            else
+                echo -e "${YELLOW}○${NC} No changes needed"
+            fi
         fi
-        
+
         # Check for complex conditions that might need manual review
-        if grep -q "needs:" "$file" || grep -q "strategy:" "$file"; then
+        if grep -Eq "needs:|strategy:" "$file"; then
             echo "  ⚠️  Complex workflow detected - manual review recommended"
-            ((MANUAL_REVIEW_NEEDED++))
+            ((MANUAL_REVIEW_NEEDED+=1))
         fi
     fi
 done
@@ -221,9 +224,4 @@ echo "Remember to update README.md with fork information!"
 echo "═══════════════════════════════════════"
 
 # Exit with appropriate code
-if [ $UPDATED_FILES -gt 0 ]; then
-    exit 0
-else
-    echo "No files were updated - workflows may already be fork-friendly"
-    exit 1
-fi
+exit 0

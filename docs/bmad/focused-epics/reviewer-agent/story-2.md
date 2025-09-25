@@ -98,7 +98,7 @@
 - `bmad-core/core-config.yaml`
 - `tools/reviewer/collect-scans.js`
 - `tools/reviewer/validate-metrics.js`
-- `tools/reviewer/telemetry-sync.js`
+- `tools/reviewer/telemetry-sync.mjs`
 - `package.json`
 - `docs/bmad/reviewer/README.md`
 

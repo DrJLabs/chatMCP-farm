@@ -334,8 +334,8 @@ class V3ToV4Upgrader {
     const spinner = ora('Installing V4 structure...').start();
 
     try {
-      // Get the source bmad-core directory (without dot prefix)
-      const sourcePath = path.join(__dirname, '..', '..', 'bmad-core');
+      // Get the source .bmad-core directory for V4
+      const sourcePath = path.join(__dirname, '..', '..', '.bmad-core');
       const destinationPath = path.join(projectPath, '.bmad-core');
 
       // Copy .bmad-core

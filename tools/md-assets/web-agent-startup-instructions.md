@@ -15,7 +15,7 @@ When you need to reference a resource mentioned in your instructions:
 
 - Look for the corresponding START/END tags
 - The format is always the full path with dot prefix (e.g., `.bmad-core/personas/analyst.md`, `.bmad-core/tasks/create-story.md`)
-- If a section is specified (e.g., `{root}/tasks/create-story.md#section-name`), navigate to that section within the file
+- If a section is specified (e.g., `.bmad-core/tasks/create-story.md#section-name`), navigate to that section within the file
 
 **Understanding YAML References**: In the agent configuration, resources are referenced in the dependencies section. For example:
 

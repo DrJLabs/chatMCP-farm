@@ -10,7 +10,9 @@
  */
 function extractYamlFromAgent(agentContent, cleanCommands = false) {
   // Remove carriage returns and match YAML block
-  const yamlMatch = agentContent.replaceAll('\r', '').match(/```ya?ml\n([\s\S]*?)\n```/);
+  const yamlMatch = agentContent
+    .replaceAll('\r', '')
+    .match(/```ya?ml[^\n]*\n([\s\S]*?)```/i);
   if (!yamlMatch) return null;
 
   let yamlContent = yamlMatch[1].trim();

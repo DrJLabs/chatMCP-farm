@@ -5,11 +5,11 @@ Designer: Quinn (Test Architect)
 
 ## Test Strategy Overview
 
-- Total test scenarios: 7
-- Unit tests: 1 (14%)
-- Integration tests: 5 (72%)
-- E2E tests: 1 (14%)
-- Priority distribution: P0: 3, P1: 3, P2: 1
+- Total test scenarios: 9
+- Unit tests: 1 (11%)
+- Integration tests: 7 (78%)
+- E2E tests: 1 (11%)
+- Priority distribution: P0: 4, P1: 4, P2: 1
 
 ## Test Scenarios by Acceptance Criteria
 
@@ -23,56 +23,56 @@ Designer: Quinn (Test Architect)
 
 | ID          | Level       | Priority | Test                                                                                          | Justification                         |
 | ----------- | ----------- | -------- | --------------------------------------------------------------------------------------------- | ------------------------------------- |
-| 1.2-INT-001 | Integration | P0       | Execute `collect-scans.js` against sample repo and assert JSON outputs exist                  | Validates child process orchestration |
-| 1.2-INT-002 | Integration | P1       | Simulate Semgrep failure to ensure descriptive error bubble-up                                | Ensures resiliency                    |
-| 1.2-INT-003 | Integration | P0       | Run Semgrep with `--baseline` flag and verify diff coverage + CLI version recorded in metrics | Confirms diff-only enforcement        |
+| 1.1-INT-001 | Integration | P0       | Execute `collect-scans.js` against sample repo and assert JSON outputs exist                  | Validates child process orchestration |
+| 1.1-INT-002 | Integration | P1       | Simulate Semgrep failure to ensure descriptive error bubble-up                                | Ensures resiliency                    |
+| 1.1-INT-003 | Integration | P0       | Run Semgrep with `--baseline` flag and verify diff coverage + CLI version recorded in metrics | Confirms diff-only enforcement        |
 
 ### AC3: Churn metadata generation
 
 | ID          | Level       | Priority | Test                                                               | Justification                |
 | ----------- | ----------- | -------- | ------------------------------------------------------------------ | ---------------------------- |
-| 1.3-INT-003 | Integration | P0       | Run churn collector on staged diff ensuring touched files captured | Protects reviewer heuristics |
+| 1.1-INT-004 | Integration | P0       | Run churn collector on staged diff ensuring touched files captured | Protects reviewer heuristics |
 
 ### AC4-6: Integration + Quality requirements
 
 | ID          | Level       | Priority | Test                                                                                               | Justification              |
 | ----------- | ----------- | -------- | -------------------------------------------------------------------------------------------------- | -------------------------- |
-| 1.4-E2E-001 | E2E         | P0       | Execute npm alias to run entire scan pipeline and verify artifacts in cache + timestamp dir        | Validates end-to-end path  |
-| 1.5-INT-004 | Integration | P2       | Verify config files parsed and allow overrides                                                     | Prevents false positives   |
-| 1.5-INT-005 | Integration | P1       | Override Semgrep binary via `SEMgrep_BIN` env and ensure preflight respects custom path            | Enables air-gapped support |
-| 1.5-INT-006 | Integration | P1       | Validate `.bmad-cache/reviewer/{git_sha}` directory naming and prune entries older than seven days | Prevents cache collisions  |
+| 1.1-E2E-001 | E2E         | P0       | Execute npm alias to run entire scan pipeline and verify artifacts in cache + timestamp dir        | Validates end-to-end path  |
+| 1.1-INT-005 | Integration | P2       | Verify config files parsed and allow overrides                                                     | Prevents false positives   |
+| 1.1-INT-006 | Integration | P1       | Override Semgrep binary via `SEMGREP_BIN` env and ensure preflight respects custom path            | Enables air-gapped support |
+| 1.1-INT-007 | Integration | P1       | Validate `.bmad-cache/reviewer/{git_sha}` directory naming and prune entries older than seven days | Prevents cache collisions  |
 
 ## Risk Coverage
 
-- TECH-001 mitigated by 1.2-INT-001, 1.2-INT-003, and 1.4-E2E-001 (runtime measurement assertions).
-- OPS-001 mitigated by 1.4-E2E-001 and 1.5-INT-006 (unique artifact path + pruning check).
-- BUS-001 mitigated by 1.5-INT-004 (ignore list verification) and metrics validation in 1.2-INT-003.
-- Operational resilience addition: 1.5-INT-005 covers air-gapped overrides.
+- TECH-001 mitigated by 1.1-INT-001, 1.1-INT-003, and 1.1-E2E-001 (runtime measurement assertions).
+- OPS-001 mitigated by 1.1-E2E-001 and 1.1-INT-007 (unique artifact path + pruning check).
+- BUS-001 mitigated by 1.1-INT-005 (ignore list verification) and metrics validation in 1.1-INT-003.
+- Operational resilience addition: 1.1-INT-006 covers air-gapped overrides.
 
 ## Recommended Execution Order
 
 1. 1.1-UNIT-001
-2. 1.2-INT-002
-3. 1.2-INT-001
-4. 1.2-INT-003
-5. 1.3-INT-003
-6. 1.5-INT-004
-7. 1.5-INT-005
-8. 1.5-INT-006
-9. 1.4-E2E-001
+2. 1.1-INT-002
+3. 1.1-INT-001
+4. 1.1-INT-003
+5. 1.1-INT-004
+6. 1.1-INT-005
+7. 1.1-INT-006
+8. 1.1-INT-007
+9. 1.1-E2E-001
 
 ## Gate Summary Block
 
 ```yaml
 test_design:
-  scenarios_total: 7
+  scenarios_total: 9
   by_level:
     unit: 1
-    integration: 5
+    integration: 7
     e2e: 1
   by_priority:
-    p0: 3
-    p1: 3
+    p0: 4
+    p1: 4
     p2: 1
   coverage_gaps: []
 ```

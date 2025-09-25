@@ -22,48 +22,48 @@ async function cmdAvailable(cmd) {
   } catch {
     return false;
   }
+}
 
-  async function testSvnMarker() {
-    const root = await mkTmpDir('svn');
-    const nested = path.join(root, 'proj', 'code');
-    await fs.ensureDir(nested);
-    await fs.ensureDir(path.join(root, '.svn'));
-    const found = await findProjectRoot(nested);
-    assertEqual(found, root, '.svn marker should be detected');
-    return { name: 'svn-marker', ok: true };
-  }
+async function testSvnMarker() {
+  const root = await mkTmpDir('svn');
+  const nested = path.join(root, 'proj', 'code');
+  await fs.ensureDir(nested);
+  await fs.ensureDir(path.join(root, '.svn'));
+  const found = await findProjectRoot(nested);
+  assertEqual(found, root, '.svn marker should be detected');
+  return { name: 'svn-marker', ok: true };
+}
 
-  async function testSymlinkStart() {
-    const root = await mkTmpDir('symlink-start');
-    const nested = path.join(root, 'a', 'b');
-    await fs.ensureDir(nested);
-    await fs.writeFile(path.join(root, '.project-root'), '\n');
-    const tmp = await mkTmpDir('symlink-tmp');
-    const link = path.join(tmp, 'link-to-b');
-    try {
-      await fs.symlink(nested, link);
-    } catch {
-      // symlink may not be permitted on some systems; skip
-      return { name: 'symlink-start', ok: true, skipped: true };
-    }
-    const found = await findProjectRoot(link);
-    assertEqual(found, root, 'should resolve symlinked start to real root');
-    return { name: 'symlink-start', ok: true };
+async function testSymlinkStart() {
+  const root = await mkTmpDir('symlink-start');
+  const nested = path.join(root, 'a', 'b');
+  await fs.ensureDir(nested);
+  await fs.writeFile(path.join(root, '.project-root'), '\n');
+  const tmp = await mkTmpDir('symlink-tmp');
+  const link = path.join(tmp, 'link-to-b');
+  try {
+    await fs.symlink(nested, link);
+  } catch {
+    // symlink may not be permitted on some systems; skip
+    return { name: 'symlink-start', ok: true, skipped: true };
   }
+  const found = await findProjectRoot(link);
+  assertEqual(found, root, 'should resolve symlinked start to real root');
+  return { name: 'symlink-start', ok: true };
+}
 
-  async function testSubmoduleLikeInnerGitFile() {
-    const root = await mkTmpDir('submodule-like');
-    const mid = path.join(root, 'mid');
-    const leaf = path.join(mid, 'leaf');
-    await fs.ensureDir(leaf);
-    // outer repo
-    await fs.ensureDir(path.join(root, '.git'));
-    // inner submodule-like .git file
-    await fs.writeFile(path.join(mid, '.git'), 'gitdir: ../.git/modules/mid\n');
-    const found = await findProjectRoot(leaf);
-    assertEqual(found, root, 'outermost .git should win on tie weight');
-    return { name: 'submodule-like-gitfile', ok: true };
-  }
+async function testSubmoduleLikeInnerGitFile() {
+  const root = await mkTmpDir('submodule-like');
+  const mid = path.join(root, 'mid');
+  const leaf = path.join(mid, 'leaf');
+  await fs.ensureDir(leaf);
+  // outer repo
+  await fs.ensureDir(path.join(root, '.git'));
+  // inner submodule-like .git file
+  await fs.writeFile(path.join(mid, '.git'), 'gitdir: ../.git/modules/mid\n');
+  const found = await findProjectRoot(leaf);
+  assertEqual(found, root, 'outermost .git should win on tie weight');
+  return { name: 'submodule-like-gitfile', ok: true };
 }
 
 async function mkTmpDir(name) {
@@ -84,7 +84,7 @@ async function testSentinel() {
   await fs.ensureDir(nested);
   await fs.writeFile(path.join(root, '.project-root'), '\n');
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'sentinel .project-root should win');
+  assertEqual(found, root, 'sentinel .project-root should win');
   return { name: 'sentinel', ok: true };
 }
 
@@ -112,7 +112,7 @@ async function testGitCliAndMarker() {
   await fs.ensureDir(nested);
   await execFileAsync('git', ['init'], { cwd: root, timeout: 2000 });
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'git toplevel should be detected');
+  assertEqual(found, root, 'git toplevel should be detected');
   return { name: 'git-cli', ok: true };
 }
 
@@ -123,7 +123,7 @@ async function testHgMarkerOrCli() {
   await fs.ensureDir(nested);
   await fs.ensureDir(path.join(root, '.hg'));
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, '.hg marker should be detected');
+  assertEqual(found, root, '.hg marker should be detected');
   return { name: 'hg-marker', ok: true };
 }
 
@@ -133,7 +133,7 @@ async function testWorkspacePnpm() {
   await fs.ensureDir(pkgA);
   await fs.writeFile(path.join(root, 'pnpm-workspace.yaml'), 'packages:\n  - packages/*\n');
   const found = await findProjectRoot(pkgA);
-  await assertEqual(found, root, 'pnpm-workspace.yaml should be detected');
+  assertEqual(found, root, 'pnpm-workspace.yaml should be detected');
   return { name: 'pnpm-workspace', ok: true };
 }
 
@@ -147,7 +147,7 @@ async function testPackageJsonWorkspaces() {
     { spaces: 2 },
   );
   const found = await findProjectRoot(pkgA);
-  await assertEqual(found, root, 'package.json workspaces should be detected');
+  assertEqual(found, root, 'package.json workspaces should be detected');
   return { name: 'package.json-workspaces', ok: true };
 }
 
@@ -157,7 +157,7 @@ async function testLockfiles() {
   await fs.ensureDir(nested);
   await fs.writeFile(path.join(root, 'yarn.lock'), '\n');
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'yarn.lock should be detected');
+  assertEqual(found, root, 'yarn.lock should be detected');
   return { name: 'lockfiles', ok: true };
 }
 
@@ -167,7 +167,7 @@ async function testLanguageConfigs() {
   await fs.ensureDir(nested);
   await fs.writeFile(path.join(root, 'pyproject.toml'), "[tool.poetry]\nname='tmp'\n");
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'pyproject.toml should be detected');
+  assertEqual(found, root, 'pyproject.toml should be detected');
   return { name: 'language-configs', ok: true };
 }
 
@@ -180,7 +180,7 @@ async function testPreferOuterOnTie() {
   await fs.writeFile(path.join(root, 'requirements.txt'), '\n');
   await fs.writeFile(path.join(mid, 'requirements.txt'), '\n');
   const found = await findProjectRoot(leaf);
-  await assertEqual(found, root, 'outermost directory should win on equal weight');
+  assertEqual(found, root, 'outermost directory should win on equal weight');
   return { name: 'prefer-outermost-tie', ok: true };
 }
 
@@ -193,7 +193,7 @@ async function testBazelWorkspace() {
   await fs.ensureDir(nested);
   await fs.writeFile(path.join(root, 'WORKSPACE'), 'workspace(name="tmp")\n');
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'Bazel WORKSPACE should be detected');
+  assertEqual(found, root, 'Bazel WORKSPACE should be detected');
   return { name: 'bazel-workspace', ok: true };
 }
 
@@ -203,7 +203,7 @@ async function testNx() {
   await fs.ensureDir(nested);
   await fs.writeJson(path.join(root, 'nx.json'), { npmScope: 'tmp' }, { spaces: 2 });
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'nx.json should be detected');
+  assertEqual(found, root, 'nx.json should be detected');
   return { name: 'nx', ok: true };
 }
 
@@ -213,7 +213,7 @@ async function testTurbo() {
   await fs.ensureDir(nested);
   await fs.writeJson(path.join(root, 'turbo.json'), { pipeline: {} }, { spaces: 2 });
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'turbo.json should be detected');
+  assertEqual(found, root, 'turbo.json should be detected');
   return { name: 'turbo', ok: true };
 }
 
@@ -223,7 +223,7 @@ async function testRush() {
   await fs.ensureDir(nested);
   await fs.writeJson(path.join(root, 'rush.json'), { projectFolderMinDepth: 1 }, { spaces: 2 });
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'rush.json should be detected');
+  assertEqual(found, root, 'rush.json should be detected');
   return { name: 'rush', ok: true };
 }
 
@@ -235,7 +235,7 @@ async function testGoWorkAndMod() {
   await fs.writeFile(path.join(root, 'go.work'), 'go 1.22\nuse ./modA\n');
   await fs.writeFile(path.join(mod, 'go.mod'), 'module example.com/a\ngo 1.22\n');
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'go.work should define the workspace root');
+  assertEqual(found, root, 'go.work should define the workspace root');
   return { name: 'go-work', ok: true };
 }
 
@@ -245,7 +245,7 @@ async function testDenoJson() {
   await fs.ensureDir(nested);
   await fs.writeJson(path.join(root, 'deno.json'), { tasks: {} }, { spaces: 2 });
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'deno.json should be detected');
+  assertEqual(found, root, 'deno.json should be detected');
   return { name: 'deno-json', ok: true };
 }
 
@@ -255,7 +255,7 @@ async function testGradleSettings() {
   await fs.ensureDir(nested);
   await fs.writeFile(path.join(root, 'settings.gradle'), "rootProject.name='tmp'\n");
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'settings.gradle should be detected');
+  assertEqual(found, root, 'settings.gradle should be detected');
   return { name: 'gradle-settings', ok: true };
 }
 
@@ -265,7 +265,7 @@ async function testMavenPom() {
   await fs.ensureDir(nested);
   await fs.writeFile(path.join(root, 'pom.xml'), '<project></project>\n');
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'pom.xml should be detected');
+  assertEqual(found, root, 'pom.xml should be detected');
   return { name: 'maven-pom', ok: true };
 }
 
@@ -275,7 +275,7 @@ async function testSbtBuild() {
   await fs.ensureDir(nested);
   await fs.writeFile(path.join(root, 'build.sbt'), 'name := "tmp"\n');
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'build.sbt should be detected');
+  assertEqual(found, root, 'build.sbt should be detected');
   return { name: 'sbt-build', ok: true };
 }
 
@@ -286,7 +286,7 @@ async function testComposer() {
   await fs.writeJson(path.join(root, 'composer.json'), { name: 'tmp/pkg' }, { spaces: 2 });
   await fs.writeFile(path.join(root, 'composer.lock'), '{}\n');
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'composer.{json,lock} should be detected');
+  assertEqual(found, root, 'composer.{json,lock} should be detected');
   return { name: 'composer', ok: true };
 }
 
@@ -296,7 +296,7 @@ async function testCargo() {
   await fs.ensureDir(nested);
   await fs.writeFile(path.join(root, 'Cargo.toml'), "[package]\nname='tmp'\nversion='0.0.0'\n");
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'Cargo.toml should be detected');
+  assertEqual(found, root, 'Cargo.toml should be detected');
   return { name: 'cargo', ok: true };
 }
 
@@ -306,7 +306,7 @@ async function testNixFlake() {
   await fs.ensureDir(nested);
   await fs.writeFile(path.join(root, 'flake.nix'), '{ }\n');
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, 'flake.nix should be detected');
+  assertEqual(found, root, 'flake.nix should be detected');
   return { name: 'nix-flake', ok: true };
 }
 
@@ -321,7 +321,7 @@ async function testChangesetConfig() {
     { spaces: 2 },
   );
   const found = await findProjectRoot(nested);
-  await assertEqual(found, root, '.changeset/config.json should be detected');
+  assertEqual(found, root, '.changeset/config.json should be detected');
   return { name: 'changesets', ok: true };
 }
 
@@ -334,7 +334,7 @@ async function testEnvCustomMarker() {
   process.env.PROJECT_ROOT_MARKERS = 'MY_ROOT';
   try {
     const found = await findProjectRoot(nested);
-    await assertEqual(found, root, 'custom env marker should be honored');
+    assertEqual(found, root, 'custom env marker should be honored');
   } finally {
     if (prev === undefined) delete process.env.PROJECT_ROOT_MARKERS;
     else process.env.PROJECT_ROOT_MARKERS = prev;
@@ -349,7 +349,7 @@ async function testPackageLowPriorityVsLock() {
   await fs.writeJson(path.join(nested, 'package.json'), { name: 'nested' }, { spaces: 2 });
   await fs.writeFile(path.join(root, 'yarn.lock'), '\n');
   const found = await findProjectRoot(path.join(nested, 'deep'));
-  await assertEqual(found, root, 'lockfile at root should outrank nested package.json');
+  assertEqual(found, root, 'lockfile at root should outrank nested package.json');
   return { name: 'package-vs-lock-priority', ok: true };
 }
 

@@ -3,6 +3,8 @@ const path = require('node:path');
 const yaml = require('js-yaml');
 const { extractYamlFromAgent } = require('./yaml-utils');
 
+const RESOURCE_EXTENSIONS = ['.md', '.yaml', '.yml'];
+
 class DependencyResolver {
   constructor(rootDir) {
     this.rootDir = rootDir;
@@ -116,24 +118,61 @@ class DependencyResolver {
     }
 
     try {
-      let content = null;
-      let filePath = null;
-
-      // First try bmad-core
-      try {
-        filePath = path.join(this.bmadCore, type, id);
-        content = await fs.readFile(filePath, 'utf8');
-      } catch {
-        // If not found in bmad-core, try common folder
-        try {
-          filePath = path.join(this.common, type, id);
-          content = await fs.readFile(filePath, 'utf8');
-        } catch {
-          // File not found in either location
-        }
+      const trimmedId = String(id || '').trim();
+      if (!trimmedId) {
+        console.warn(`Resource not found: ${type}/${id}`);
+        return null;
       }
 
-      if (!content) {
+      const tryRead = async (baseDir) => {
+        const base = path.join(baseDir, type);
+        const candidates = [];
+        const seen = new Set();
+
+        const pushCandidate = (candidate) => {
+          if (candidate && !seen.has(candidate)) {
+            seen.add(candidate);
+            candidates.push(candidate);
+          }
+        };
+
+        pushCandidate(trimmedId);
+
+        const lowerId = trimmedId.toLowerCase();
+        const hasKnownExtension = RESOURCE_EXTENSIONS.some((ext) => lowerId.endsWith(ext));
+        const normalized = trimmedId.replace(/\.(md|ya?ml)$/i, '');
+        const extensionBase = hasKnownExtension ? normalized : trimmedId;
+        const sanitizedBase = extensionBase.replace(/\.(md|ya?ml)$/i, '');
+        if (sanitizedBase) {
+          for (const ext of RESOURCE_EXTENSIONS) {
+            pushCandidate(`${sanitizedBase}${ext}`);
+          }
+        }
+
+        for (const candidate of candidates) {
+          const resolved = path.resolve(base, candidate);
+          const relative = path.relative(base, resolved);
+          if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+            console.warn(`Blocked resource outside ${type} root: ${id}`);
+            continue;
+          }
+          try {
+            const content = await fs.readFile(resolved, 'utf8');
+            return { path: resolved, content };
+          } catch {
+            // try next candidate
+          }
+        }
+
+        return null;
+      };
+
+      let resourceEntry = await tryRead(this.bmadCore);
+      if (!resourceEntry) {
+        resourceEntry = await tryRead(this.common);
+      }
+
+      if (!resourceEntry) {
         console.warn(`Resource not found: ${type}/${id}`);
         return null;
       }
@@ -141,8 +180,8 @@ class DependencyResolver {
       const resource = {
         type,
         id,
-        path: filePath,
-        content,
+        path: resourceEntry.path,
+        content: resourceEntry.content,
       };
 
       this.cache.set(cacheKey, resource);

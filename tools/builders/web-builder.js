@@ -3,6 +3,12 @@ const path = require('node:path');
 const DependencyResolver = require('../lib/dependency-resolver');
 const yamlUtilities = require('../lib/yaml-utils');
 
+const RESOURCE_EXTENSIONS = ['.md', '.yaml', '.yml'];
+
+function normalizeResourceName(name) {
+  return String(name || '').replace(/\.(md|ya?ml)$/i, '');
+}
+
 class WebBuilder {
   constructor(options = {}) {
     this.rootDir = options.rootDir || process.cwd();
@@ -37,6 +43,57 @@ class WebBuilder {
     }
 
     return `.${bundleRoot}/${resourcePath}`;
+  }
+
+  async readResourceFrom(baseDir, type, resourceName, preferredFiles = []) {
+    if (!baseDir) return null;
+    const base = path.join(baseDir, type);
+    const candidates = [];
+    const seen = new Set();
+
+    for (const candidate of preferredFiles) {
+      if (candidate && !seen.has(candidate)) {
+        seen.add(candidate);
+        candidates.push(candidate);
+      }
+    }
+
+    const trimmed = String(resourceName || '').trim();
+    if (trimmed && !seen.has(trimmed)) {
+      seen.add(trimmed);
+      candidates.push(trimmed);
+    }
+
+    const lower = trimmed.toLowerCase();
+    const hasKnownExtension = RESOURCE_EXTENSIONS.some((ext) => lower.endsWith(ext));
+    const normalized = normalizeResourceName(trimmed);
+    const baseForExtensions = hasKnownExtension ? normalized : trimmed;
+    if (baseForExtensions) {
+      for (const ext of RESOURCE_EXTENSIONS) {
+        const candidate = `${baseForExtensions}${ext}`;
+        if (!seen.has(candidate)) {
+          seen.add(candidate);
+          candidates.push(candidate);
+        }
+      }
+    }
+
+    for (const candidate of candidates) {
+      const resolved = path.resolve(base, candidate);
+      const relative = path.relative(base, resolved);
+      if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+        console.warn(`    ⚠ Blocked dependency outside ${type}: ${resourceName}`);
+        continue;
+      }
+      try {
+        const content = await fs.readFile(resolved, 'utf8');
+        return { path: resolved, content };
+      } catch {
+        // Try next candidate
+      }
+    }
+
+    return null;
   }
 
   generateWebInstructions(bundleType, packName = null) {
@@ -75,7 +132,7 @@ When you need to reference a resource mentioned in your instructions:
 
 - Look for the corresponding START/END tags
 - The format is always the full path with dot prefix (e.g., \`${personasExample}\`, \`${tasksExample}\`)
-- If a section is specified (e.g., \`{root}/tasks/create-story.md#section-name\`), navigate to that section within the file
+- If a section is specified (e.g., \`${tasksExample}#section-name\`), navigate to that section within the file
 
 **Understanding YAML References**: In the agent configuration, resources are referenced in the dependencies section. For example:
 
@@ -247,11 +304,11 @@ These references map directly to bundle sections:
     }
   }
 
-  formatSection(path, content, bundleRoot = 'bmad-core') {
+  formatSection(filePath, content, bundleRoot = 'bmad-core') {
     const separator = '====================';
 
     // Process agent content if this is an agent file
-    if (path.includes('/agents/')) {
+    if (filePath.includes('/agents/')) {
       content = this.processAgentContent(content);
     }
 
@@ -259,9 +316,9 @@ These references map directly to bundle sections:
     content = this.replaceRootReferences(content, bundleRoot);
 
     return [
-      `${separator} START: ${path} ${separator}`,
+      `${separator} START: ${filePath} ${separator}`,
       content.trim(),
-      `${separator} END: ${path} ${separator}`,
+      `${separator} END: ${filePath} ${separator}`,
       '',
     ].join('\n');
   }
@@ -401,52 +458,33 @@ These references map directly to bundle sections:
         if (agentConfig.dependencies) {
           // Add resources, first try expansion pack, then core
           for (const [resourceType, resources] of Object.entries(agentConfig.dependencies)) {
-            if (Array.isArray(resources)) {
-              for (const resourceName of resources) {
-                let found = false;
+            if (!Array.isArray(resources)) continue;
+            for (const resourceName of resources) {
+              const sources = [
+                { base: packDir, label: 'expansion pack' },
+                { base: path.join(this.rootDir, 'bmad-core'), label: 'core' },
+                { base: path.join(this.rootDir, 'common'), label: 'common' },
+              ];
 
-                // Try expansion pack first
-                const resourcePath = path.join(packDir, resourceType, resourceName);
-                try {
-                  const resourceContent = await fs.readFile(resourcePath, 'utf8');
-                  const resourceWebPath = this.convertToWebPath(resourcePath, packName);
-                  sections.push(this.formatSection(resourceWebPath, resourceContent, packName));
-                  found = true;
-                } catch {
-                  // Not in expansion pack, continue
-                }
-
-                // If not found in expansion pack, try core
-                if (!found) {
-                  const corePath = path.join(this.rootDir, 'bmad-core', resourceType, resourceName);
-                  try {
-                    const coreContent = await fs.readFile(corePath, 'utf8');
-                    const coreWebPath = this.convertToWebPath(corePath, packName);
-                    sections.push(this.formatSection(coreWebPath, coreContent, packName));
-                    found = true;
-                  } catch {
-                    // Not in core either, continue
+              let loaded = null;
+              for (const source of sources) {
+                loaded = await this.readResourceFrom(source.base, resourceType, resourceName);
+                if (loaded) {
+                  const webPath = this.convertToWebPath(loaded.path, packName);
+                  sections.push(this.formatSection(webPath, loaded.content, packName));
+                  if (source.label !== 'expansion pack') {
+                    console.debug(
+                      `    Using ${source.label} resource for ${resourceType}#${resourceName}`,
+                    );
                   }
+                  break;
                 }
+              }
 
-                // If not found in core, try common folder
-                if (!found) {
-                  const commonPath = path.join(this.rootDir, 'common', resourceType, resourceName);
-                  try {
-                    const commonContent = await fs.readFile(commonPath, 'utf8');
-                    const commonWebPath = this.convertToWebPath(commonPath, packName);
-                    sections.push(this.formatSection(commonWebPath, commonContent, packName));
-                    found = true;
-                  } catch {
-                    // Not in common either, continue
-                  }
-                }
-
-                if (!found) {
-                  console.warn(
-                    `    ⚠ Dependency ${resourceType}#${resourceName} not found in expansion pack or core`,
-                  );
-                }
+              if (!loaded) {
+                console.warn(
+                  `    ⚠ Dependency ${resourceType}#${resourceName} not found in expansion pack or shared roots`,
+                );
               }
             }
           }
@@ -494,7 +532,11 @@ These references map directly to bundle sections:
         for (const resourceFile of resourceFiles.filter(
           (f) => f.endsWith('.md') || f.endsWith('.yaml'),
         )) {
-          expansionResources.set(`${resourceDir}#${resourceFile}`, true);
+          const normalizedName = normalizeResourceName(resourceFile);
+          const key = `${resourceDir}#${normalizedName}`;
+          if (!expansionResources.has(key)) {
+            expansionResources.set(key, resourceFile);
+          }
         }
       } catch {
         // Directory might not exist, that's fine
@@ -530,11 +572,16 @@ These references map directly to bundle sections:
               for (const [resourceType, resources] of Object.entries(agentConfig.dependencies)) {
                 if (Array.isArray(resources)) {
                   for (const resourceName of resources) {
-                    const key = `${resourceType}#${resourceName}`;
-                    if (!allDependencies.has(key)) {
-                      allDependencies.set(key, { type: resourceType, name: resourceName });
-                    }
+                  const normalizedName = normalizeResourceName(resourceName);
+                  const key = `${resourceType}#${normalizedName}`;
+                  if (!allDependencies.has(key)) {
+                    allDependencies.set(key, {
+                      type: resourceType,
+                      name: normalizedName,
+                      requested: resourceName,
+                    });
                   }
+                }
                 }
               }
             }
@@ -557,14 +604,19 @@ These references map directly to bundle sections:
               const agentConfig = this.parseYaml(yamlContent);
               if (agentConfig.dependencies) {
                 for (const [resourceType, resources] of Object.entries(agentConfig.dependencies)) {
-                  if (Array.isArray(resources)) {
-                    for (const resourceName of resources) {
-                      const key = `${resourceType}#${resourceName}`;
-                      if (!allDependencies.has(key)) {
-                        allDependencies.set(key, { type: resourceType, name: resourceName });
+                    if (Array.isArray(resources)) {
+                      for (const resourceName of resources) {
+                        const normalizedName = normalizeResourceName(resourceName);
+                        const key = `${resourceType}#${normalizedName}`;
+                        if (!allDependencies.has(key)) {
+                          allDependencies.set(key, {
+                            type: resourceType,
+                            name: normalizedName,
+                            requested: resourceName,
+                          });
+                        }
                       }
                     }
-                  }
                 }
               }
             } catch (error) {
@@ -584,42 +636,41 @@ These references map directly to bundle sections:
 
       // Always check expansion pack first, even if the dependency came from a core agent
       if (expansionResources.has(key)) {
-        // We know it exists in expansion pack, find and load it
-        const expansionPath = path.join(packDir, dep.type, dep.name);
-        try {
-          const content = await fs.readFile(expansionPath, 'utf8');
-          const expansionWebPath = this.convertToWebPath(expansionPath, packName);
-          sections.push(this.formatSection(expansionWebPath, content, packName));
+        const preferredFile = expansionResources.get(key);
+        const loaded = await this.readResourceFrom(packDir, dep.type, dep.requested, [preferredFile]);
+        if (loaded) {
+          const expansionWebPath = this.convertToWebPath(loaded.path, packName);
+          sections.push(this.formatSection(expansionWebPath, loaded.content, packName));
           console.log(`      ✓ Using expansion override for ${key}`);
           found = true;
-        } catch {
-          // Try next extension
         }
       }
 
       // If not found in expansion pack (or doesn't exist there), try core
       if (!found) {
-        const corePath = path.join(this.rootDir, 'bmad-core', dep.type, dep.name);
-        try {
-          const content = await fs.readFile(corePath, 'utf8');
-          const coreWebPath = this.convertToWebPath(corePath, packName);
-          sections.push(this.formatSection(coreWebPath, content, packName));
+        const loaded = await this.readResourceFrom(
+          path.join(this.rootDir, 'bmad-core'),
+          dep.type,
+          dep.requested,
+        );
+        if (loaded) {
+          const coreWebPath = this.convertToWebPath(loaded.path, packName);
+          sections.push(this.formatSection(coreWebPath, loaded.content, packName));
           found = true;
-        } catch {
-          // Not in core either, continue
         }
       }
 
       // If not found in core, try common folder
       if (!found) {
-        const commonPath = path.join(this.rootDir, 'common', dep.type, dep.name);
-        try {
-          const content = await fs.readFile(commonPath, 'utf8');
-          const commonWebPath = this.convertToWebPath(commonPath, packName);
-          sections.push(this.formatSection(commonWebPath, content, packName));
+        const loaded = await this.readResourceFrom(
+          path.join(this.rootDir, 'common'),
+          dep.type,
+          dep.requested,
+        );
+        if (loaded) {
+          const commonWebPath = this.convertToWebPath(loaded.path, packName);
+          sections.push(this.formatSection(commonWebPath, loaded.content, packName));
           found = true;
-        } catch {
-          // Not in common either, continue
         }
       }
 
