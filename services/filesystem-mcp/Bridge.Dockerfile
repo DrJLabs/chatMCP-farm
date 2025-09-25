@@ -65,8 +65,10 @@ log() {
 
 trim() {
   local input="$1"
-  # shellcheck disable=SC2001
-  input="$(echo "$input" | sed -e 's/^\s*//' -e 's/\s*$//')"
+  # remove leading whitespace
+  input="${input#"${input%%[![:space:]]*}"}"
+  # remove trailing whitespace
+  input="${input%"${input##*[![:space:]]}"}"
   printf '%s' "$input"
 }
 
@@ -79,11 +81,6 @@ is_true() {
 
 PORT="${SSE_PORT:-12010}"
 IFS=':' read -r -a roots <<< "${FS_ALLOWED:-/projects:/VAULTS}"
-
-if ((${#roots[@]} == 0)); then
-  log "FS_ALLOWED is empty; provide at least one directory."
-  exit 1
-fi
 
 validated_roots=()
 for raw_root in "${roots[@]}"; do

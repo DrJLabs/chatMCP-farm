@@ -20,7 +20,12 @@ if docker run --rm -e FS_ALLOWED="" "$IMAGE_TAG" >/dev/null 2>&1; then
 fi
 
 echo "[filesystem-mcp] Verifying SSE port 12010 is reachable" >&2
-container_name="filesystem-mcp-bridge-smoke-$$"
+if command -v uuidgen >/dev/null 2>&1; then
+  container_suffix=$(uuidgen | tr '[:upper:]' '[:lower:]')
+else
+  container_suffix=$(printf '%s%04x' "fallback" "$RANDOM")
+fi
+container_name="filesystem-mcp-bridge-smoke-${container_suffix}"
 cleanup() {
   docker rm -f "$container_name" >/dev/null 2>&1 || true
 }

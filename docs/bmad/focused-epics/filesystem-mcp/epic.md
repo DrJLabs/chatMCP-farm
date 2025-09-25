@@ -23,7 +23,7 @@ Deliver a filesystem MCP service that mirrors the GitHub bridge experience while
 **Success Criteria**
 
 - Compose profile `filesystem-mcp` builds successfully and exposes the SSE bridge (`http://filesystem-mcp-bridge:12010/mcp`) plus the public service (`https://fs-mcp.local`).
-- Default configuration mounts `/srv/projects` and `/srv/data` (mapped from `/projects` and `/VAULTS`) read-only, with clear instructions for enabling writes when explicitly approved.
+- Default configuration mounts `/srv/projects` and `/srv/vaults` (mapped from `/projects` and `/VAULTS`) read-only, with clear instructions for enabling writes when explicitly approved.
 - `/projects` and `/VAULTS` browsing works through MCP clients without PATs or GitHub auth, validated via smoke tests.
 - Documentation covers build steps, environment toggles, security posture, and operational validation.
 
