@@ -10,3 +10,11 @@ options:
     - .bmad-cache/**
     - artifacts/**
     - coverage/**
+
+rules:
+  - id: bmad-repo-placeholder
+    message: "Repository-specific Semgrep options (no-op rule)."
+    languages: [generic]
+    severity: INFO
+    pattern: $X
+    pattern-not: $X
