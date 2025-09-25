@@ -105,33 +105,16 @@ class FileManager {
       console.warn("Could not read version from package.json, using 'unknown'");
     }
 
-    const manifest = {
+    const manifestBase = {
       version: coreVersion,
       installed_at: new Date().toISOString(),
       install_type: config.installType,
       agent: config.agent || null,
       ides_setup: config.ides || [],
       expansion_packs: config.expansionPacks || [],
-      files: [],
     };
 
-    // Add file information
-    for (const file of files) {
-      const filePath = path.join(installDir, file);
-      const hash = await this.calculateFileHash(filePath);
-
-      manifest.files.push({
-        path: file,
-        hash: hash,
-        modified: false,
-      });
-    }
-
-    // Write manifest
-    await fs.ensureDir(path.dirname(manifestPath));
-    await fs.writeFile(manifestPath, yaml.dump(manifest, { indent: 2 }));
-
-    return manifest;
+    return this.writeManifestWithFiles(manifestPath, manifestBase, installDir, files);
   }
 
   async readManifest(installDir) {
@@ -242,29 +225,35 @@ class FileManager {
   async createExpansionPackManifest(installDir, packId, config, files) {
     const manifestPath = path.join(installDir, `.${packId}`, this.manifestFile);
 
-    const manifest = {
+    const manifestBase = {
       version: config.expansionPackVersion || require('../../../package.json').version,
       installed_at: new Date().toISOString(),
       install_type: config.installType,
       expansion_pack_id: config.expansionPackId,
       expansion_pack_name: config.expansionPackName,
       ides_setup: config.ides || [],
+    };
+
+    return this.writeManifestWithFiles(manifestPath, manifestBase, installDir, files);
+  }
+
+  async writeManifestWithFiles(manifestPath, manifestBase, installDir, files) {
+    const manifest = {
+      ...manifestBase,
       files: [],
     };
 
-    // Add file information
     for (const file of files) {
       const filePath = path.join(installDir, file);
       const hash = await this.calculateFileHash(filePath);
 
       manifest.files.push({
         path: file,
-        hash: hash,
+        hash,
         modified: false,
       });
     }
 
-    // Write manifest
     await fs.ensureDir(path.dirname(manifestPath));
     await fs.writeFile(manifestPath, yaml.dump(manifest, { indent: 2 }));
 
