@@ -1,0 +1,12 @@
+# Semgrep override configuration for the BMAD reviewer pipeline.
+# Extend this file with repository-specific ignore patterns or custom rules.
+# The default configuration disables scanning generated assets and cache directories.
+
+options:
+  exclude:
+    - node_modules/**
+    - dist/**
+    - build/**
+    - .bmad-cache/**
+    - artifacts/**
+    - coverage/**
