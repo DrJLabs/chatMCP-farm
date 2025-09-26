@@ -72,6 +72,7 @@ Provide a quick reference for operating the shared automation scripts that (a) a
 > - When adding a new service, run `scripts/kc/create_mcp_scope.sh --resource <MCP_PUBLIC_BASE_URL>` before starting the stack to register Keycloak scopes.
 > - Always tear down with `scripts/compose.sh --profile mcp-test-server down --remove-orphans` (or set `COMPOSE_PROFILES`) so the opt-in containers stop cleanly after validation.
 > - Guardrail: `npm run guard` (or any CI calling it) runs `scripts/check-compose-profile.sh` to dry-run the profile and `scripts/check-inline-secrets.mjs` to block inline secrets.
+> - For the filesystem bridge, pair these commands with `docs/runbooks/filesystem-mcp.md` to document security toggles, smoke validation, and approval evidence.
 
 ---
 
