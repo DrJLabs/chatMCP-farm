@@ -29,17 +29,17 @@ Deliver a filesystem MCP service that mirrors the GitHub bridge experience while
 
 ## Stories
 
-1. **Story 1 (Planned):** Containerize `rust-mcp-filesystem` with `mcp-proxy`, including entrypoint script mapping `FS_ALLOWED` to positional arguments and exposing SSE port `12010`.
-2. **Story 2 (Planned):** Author compose profile, Traefik routing, and `.env.example` for the new service, ensuring `/projects` and `/VAULTS` mounts default to read-only and follow existing bridging patterns.
-3. **Story 3 (Planned):** Document bring-up workflow, smoke tests, and security guidance (write enablement, root scoping) under `docs/` and integrate with `scripts/compose.sh` if required.
+1. **Story 1 – Bridge Container (Done):** Containerized `rust-mcp-filesystem` behind `mcp-proxy` with entrypoint guardrails and SSE port 12010 exposure. See `docs/stories/4.1.filesystem-mcp-bridge-container.md`.
+2. **Story 2 – Compose Profile (Done):** Delivered opt-in compose fragment, `.env.example`, read-only host mounts, and validation evidence. See `docs/stories/4.2.filesystem-mcp-compose-profile.md`.
+3. **Story 3 – Runbook & Validation Docs (Done):** Published filesystem runbook, security/approval workflow, QA collateral, and cross-runbook references. See `docs/stories/4.3.filesystem-mcp-runbook.md`.
 
 ## Compatibility Requirements
 
-- [ ] Reuse `proxy` network and Traefik labels consistent with other MCP services.
-- [ ] Keep defaults read-only (`ALLOW_WRITE=false`, `ENABLE_ROOTS=false`) with explicit, documented overrides.
-- [ ] Pin the upstream repository checkout (branch/ref) to guarantee reproducible builds.
-- [ ] Ensure compose profile cooperates with existing scripts and does not require GitHub tokens or PATs.
-- [ ] Align environment variable names with `mcp-auth-kit` expectations (`MCP_PROTOCOL_VERSION`, `MCP_ALLOWED_ORIGINS`, etc.).
+- [x] Reuse `proxy` network and Traefik labels consistent with other MCP services.
+- [x] Keep defaults read-only (`ALLOW_WRITE=false`, `ENABLE_ROOTS=false`) with explicit, documented overrides.
+- [x] Pin the upstream repository checkout (branch/ref) to guarantee reproducible builds.
+- [x] Ensure compose profile cooperates with existing scripts and does not require GitHub tokens or PATs.
+- [x] Align environment variable names with `mcp-auth-kit` expectations (`MCP_PROTOCOL_VERSION`, `MCP_ALLOWED_ORIGINS`, etc.).
 
 ## Risk Mitigation
 
@@ -54,20 +54,19 @@ Deliver a filesystem MCP service that mirrors the GitHub bridge experience while
 
 ## Definition of Done
 
-- [ ] `services/filesystem-mcp/Bridge.Dockerfile`, `compose.yml`, and `.env.example` committed with review-ready documentation.
-- [ ] Compose profile passes `COMPOSE_PROFILES=filesystem-mcp docker compose ... config` and bring-up smoke tests (bridge + public endpoints).
-- [ ] Docs capture bring-up, curl-based verification, and Keycloak/OAuth setup for the new host.
-- [ ] Security review recorded covering write toggles, scopes, and default read-only posture.
-- [ ] Focused-epic collateral (stories, risk profile, test design) created following BMAD workflow stages.
+- [x] `services/filesystem-mcp/Bridge.Dockerfile`, `compose.yml`, and `.env.example` committed with review-ready documentation.
+- [x] Compose profile passes `COMPOSE_PROFILES=filesystem-mcp docker compose ... config` and bring-up smoke tests (bridge + public endpoints).
+- [x] Docs capture bring-up, curl-based verification, and Keycloak/OAuth setup for the new host.
+- [x] Security review recorded covering write toggles, scopes, and default read-only posture.
+- [x] Focused-epic collateral (stories, risk profile, test design) created following BMAD workflow stages.
 
 ## Validation Checklist
 
-- [ ] SSE bridge reachable on `filesystem-mcp-bridge:12010/mcp` from inside the network; public HTTP path serves manifest/health endpoints on `12011`.
-- [ ] `FS_ALLOWED` defaults restrict access to `/projects` and `/VAULTS`; attempts outside the list fail.
-- [ ] Write mode verified in isolated environment before production enablement and documented in runbook.
-- [ ] Traefik router resolves `https://fs-mcp.local` with TLS + OAuth guard enabled.
+- [x] SSE bridge reachable on `filesystem-mcp-bridge:12010/mcp` from inside the network; public HTTP path serves manifest/health endpoints on `12011`.
+- [x] `FS_ALLOWED` defaults restrict access to `/projects` and `/VAULTS`; attempts outside the list fail.
+- [x] Write mode verified in isolated environment before production enablement and documented in runbook.
+- [x] Traefik router resolves `https://fs-mcp.local` with TLS + OAuth guard enabled.
 
 ## 🔬 Research & Validation Log
 
-- Pending researcher validation after story drafting.
-
+- 2025-09-25: Runbook and QA collateral validated; see docs/qa/assessments/20250925/4.3-*.md for risk, test design, trace, NFR, and review evidence supporting Story 4.3 hand-off.
