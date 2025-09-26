@@ -62,6 +62,6 @@ trace:
     full: 4
     partial: 0
     none: 0
-  planning_ref: 'docs/qa/assessments/4.3-test-design-20250925.md'
+  planning_ref: 'docs/qa/assessments/20250925/4.3-test-design-20250925.md'
   uncovered: []
-  notes: 'docs/qa/assessments/4.3-trace-20250925.md'
+  notes: 'docs/qa/assessments/20250925/4.3-trace-20250925.md'

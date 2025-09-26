@@ -11,6 +11,7 @@
 - Optional local image build: `docker build -f services/filesystem-mcp/Bridge.Dockerfile -t filesystem-mcp-bridge:local .` when iterating on Dockerfile changes. [Ref: docs/stories/4.1.filesystem-mcp-bridge-container.md]
 
 ## 2. Configuration Reference
+
 | Variable | Default | Notes |
 | --- | --- | --- |
 | `FS_ALLOWED` | `/projects:/VAULTS` | Colon-separated container paths exposed to the bridge CLI. Reject empty values; keep restricted until reviewed. [Ref: docs/bmad/focused-epics/filesystem-mcp/epic.md#risk-mitigation] |
